@@ -20,13 +20,9 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # The PyPI trusted publisher for this project is registered WITH the `pypi`
-    # environment, so the OIDC subject must carry it. (This must match the
-    # Environment field of the publisher on PyPI exactly; leave it unset only if
-    # the publisher was registered with no environment.)
-    environment:
-      name: pypi
-      url: https://pypi.org/project/vcf-super-cli/
+    # No `environment:` block — the PyPI trusted publisher for this project is
+    # registered with a blank Environment, so the OIDC subject must NOT carry one.
+    # Adding an `environment:` here changes the subject claim and breaks the match.
     steps:
       - name: Checkout (full history for changelog notes)
         uses: actions/checkout@v6

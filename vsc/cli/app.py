@@ -21,7 +21,9 @@ from vsc.gen.discover import (
     vsphere_services,
 )
 from vsc.logging_config import configure_logging
+from vsc.pyvmomi.events import events_app
 from vsc.pyvmomi.perf import perf_app
+from vsc.pyvmomi.tasks import tasks_app
 
 
 def _build_app() -> typer.Typer:
@@ -48,6 +50,8 @@ def _build_app() -> typer.Typer:
     # (perf/…) mounted alongside them under the same `vsc vsphere` tree.
     vsphere_group = build_group(vsphere_ops, connect_for_backend)
     vsphere_group.add_typer(perf_app, name="perf")
+    vsphere_group.add_typer(events_app, name="events")
+    vsphere_group.add_typer(tasks_app, name="tasks")
     app.add_typer(
         vsphere_group,
         name="vsphere",

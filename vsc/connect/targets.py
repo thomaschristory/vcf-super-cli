@@ -77,7 +77,7 @@ def resolve_target(backend: str) -> Target:
     username = os.environ.get(f"{prefix}_USERNAME", username or "") or None
     password = os.environ.get(f"{prefix}_PASSWORD", password or "") or None
     env_insecure = os.environ.get(f"{prefix}_INSECURE")
-    if env_insecure is not None:
+    if env_insecure:  # non-empty only; an empty string is not an override
         insecure = env_insecure.strip().lower() in _TRUTHY
 
     missing = [

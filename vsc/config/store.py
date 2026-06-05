@@ -9,7 +9,9 @@ from pathlib import Path
 import keyring
 import platformdirs
 import structlog
+from pydantic import ValidationError
 from ruamel.yaml import YAML
+from ruamel.yaml.error import YAMLError
 
 from vsc.config.schema import Config
 
@@ -18,6 +20,10 @@ log = structlog.get_logger(__name__)
 _KEYRING_SERVICE = "vcf-super-cli"
 _yaml = YAML(typ="safe")
 _yaml.default_flow_style = False
+
+
+class ConfigError(Exception):
+    """The configuration file exists but is malformed or invalid."""
 
 
 def config_path() -> Path:
@@ -29,23 +35,43 @@ def config_path() -> Path:
 
 
 def load_config() -> Config:
-    """Read the config file, returning an empty Config if it does not exist."""
+    """Read the config file, returning an empty Config if it does not exist.
+
+    Raises :class:`ConfigError` (never a raw parse/validation error) if the file
+    exists but is malformed, so callers can map it to a clean exit code.
+    """
     path = config_path()
     if not path.exists():
         return Config()
-    with path.open("r", encoding="utf-8") as fh:
-        data = _yaml.load(fh) or {}
-    return Config.model_validate(data)
+    try:
+        with path.open("r", encoding="utf-8") as fh:
+            data = _yaml.load(fh) or {}
+        return Config.model_validate(data)
+    except (YAMLError, ValidationError, TypeError) as exc:
+        raise ConfigError(f"invalid config at {path}: {exc}") from exc
 
 
 def save_config(config: Config) -> Path:
-    """Write the config file (mode 0600) and return its path."""
+    """Atomically write the config file at mode 0600 and return its path.
+
+    The file is created with 0600 from the start (never a looser intermediate
+    mode) and swapped in via an atomic rename, so a cleartext password is never
+    momentarily world/group-readable.
+    """
     path = config_path()
     path.parent.mkdir(parents=True, exist_ok=True)
+    path.parent.chmod(0o700)
     data = config.model_dump(exclude_none=True)
     buffer = io.StringIO()
     _yaml.dump(data, buffer)
-    path.write_text(buffer.getvalue(), encoding="utf-8")
+
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.write(fd, buffer.getvalue().encode("utf-8"))
+    finally:
+        os.close(fd)
+    os.replace(tmp, path)
     path.chmod(0o600)
     return path
 

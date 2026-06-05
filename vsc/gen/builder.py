@@ -14,6 +14,7 @@ from typing import Any
 
 import requests
 import typer
+from vmware.vapi.exception import CoreException
 
 from vsc.config.store import ConfigError
 from vsc.connect.targets import TargetNotConfigured
@@ -33,6 +34,10 @@ ConnectFn = Callable[[str], Any]
 
 _OUTPUT_PARAM = "_vsc_output"
 _APPLY_PARAM = "_vsc_apply"
+
+# User-facing option names the generator injects itself; a real SDK parameter with
+# one of these names is renamed so it can't shadow --output / --apply.
+_RESERVED_OPTION_NAMES = frozenset({"output", "apply"})
 
 _ANNOTATIONS: dict[ParamKind, type] = {
     ParamKind.INTEGER: int,
@@ -62,7 +67,8 @@ def _help_text(param: Param) -> str:
 
 def _sig_name(param: Param, used: set[str]) -> str:
     name = param.name
-    if keyword.iskeyword(name) or name in (_OUTPUT_PARAM, _APPLY_PARAM) or name in used:
+    reserved = name in (_OUTPUT_PARAM, _APPLY_PARAM) or name in _RESERVED_OPTION_NAMES
+    if keyword.iskeyword(name) or reserved or name in used:
         name = f"{name}_"
     used.add(name)
     return name
@@ -81,7 +87,10 @@ def _build_signature(op: Operation) -> tuple[inspect.Signature, list[tuple[Param
         if param.in_path:
             default = typer.Argument(... if param.required else None, help=help_text)
         else:
-            kebab = param.name.replace("_", "-")
+            # A param named output/apply would otherwise emit --output/--apply and
+            # clash with the injected options; use the suffixed sig name for those.
+            opt_source = sig_name if param.name in _RESERVED_OPTION_NAMES else param.name
+            kebab = opt_source.replace("_", "-")
             # Boolean options need a dual flag so the user can send False, not
             # just True; otherwise only the positive flag exists.
             opt = f"--{kebab}/--no-{kebab}" if param.kind is ParamKind.BOOLEAN else f"--{kebab}"
@@ -131,15 +140,22 @@ def make_command(op: Operation, connect_fn: ConnectFn) -> Callable[..., None]:
         raw_fmt = kwargs.get(_OUTPUT_PARAM, OutputFormat.json)
         fmt = raw_fmt.value if isinstance(raw_fmt, OutputFormat) else str(raw_fmt)
         apply = bool(kwargs.get(_APPLY_PARAM, False))
+        # Coerce inputs and resolve the write plan up front. Building the plan
+        # serializes the request body, so a malformed/incomplete struct surfaces
+        # here as a clean usage error (exit 2) — before any connection — rather
+        # than leaking a vAPI traceback. CoreException is the SDK's client-side
+        # validation/serialization error.
         try:
             sdk_kwargs = _collect_kwargs(spec, kwargs)
-        except CoercionError as exc:
+            plan = build_request_plan(op, sdk_kwargs) if op.is_write else None
+        except (CoercionError, CoreException) as exc:
             _fail_usage(exc, fmt)
             return
         # Dry-run by default: preview the resolved request and touch nothing — no
         # connection is opened unless the write is explicitly applied.
         if op.is_write and not apply:
-            emit_request(build_request_plan(op, sdk_kwargs), applied=False, fmt=fmt)
+            assert plan is not None  # guaranteed: op.is_write -> plan built above
+            emit_request(plan, applied=False, fmt=fmt)
             return
         try:
             cfg = connect_fn(op.backend)
@@ -150,9 +166,8 @@ def make_command(op: Operation, connect_fn: ConnectFn) -> Callable[..., None]:
             else:
                 result = service._invoke(op.op_id, sdk_kwargs)
             if op.is_write:
-                emit_request(
-                    build_request_plan(op, sdk_kwargs), applied=True, result=result, fmt=fmt
-                )
+                assert plan is not None  # guaranteed: op.is_write -> plan built above
+                emit_request(plan, applied=True, result=result, fmt=fmt)
             else:
                 emit(result, fmt)
         except TargetNotConfigured as exc:

@@ -54,6 +54,11 @@ def build_request_plan(op: Operation, sdk_kwargs: dict[str, Any]) -> dict[str, A
 
     ``sdk_kwargs`` are the coerced keyword arguments (path/query/body values) that
     would be passed to the SDK method. ``None`` values are treated as absent.
+
+    ``url`` is the resolved REST template and may include a literal query string the
+    SDK bakes into the template (e.g. ``?force=true`` on force variants); ``query``
+    holds the *structured* query parameters supplied as arguments. Both together
+    describe the wire request.
     """
     present = {k: v for k, v in sdk_kwargs.items() if v is not None}
     by_name = {p.name: p for p in op.params}

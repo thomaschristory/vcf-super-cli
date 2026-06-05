@@ -48,6 +48,16 @@ def test_plan_omits_absent_optional_values() -> None:
     assert "unset" not in plan["body"] if plan["body"] else True
 
 
+def test_plan_extracts_query_params_real_op() -> None:
+    # NSX Groups delete carries real query parameters (force, fail_if_subtree_exists).
+    op = _write("Groups", "delete", "nsx")
+    plan = build_request_plan(op, {"domain_id": "default", "group_id": "g1", "force": True})
+    assert plan["method"] == "DELETE"
+    assert plan["path_params"] == {"domain_id": "default", "group_id": "g1"}
+    assert plan["query"] == {"force": True}
+    assert "{domainId}" not in plan["url"] and "{groupId}" not in plan["url"]
+
+
 def test_plan_extracts_query_params() -> None:
     # Synthetic op to pin query extraction deterministically.
     op = Operation(

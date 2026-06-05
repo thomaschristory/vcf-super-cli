@@ -9,7 +9,7 @@ import com.vmware.vapi.std.errors_client as verr
 from com.vmware.vapi.std_client import LocalizableMessage
 from rich.console import Console
 
-from vsc.output.render import emit, jsonable, to_json, to_table, write_envelope
+from vsc.output.render import emit, emit_request, jsonable, to_json, to_table, write_envelope
 
 
 def _sample_struct() -> object:
@@ -65,3 +65,17 @@ def test_write_envelope_applied_includes_result() -> None:
     assert env["applied"] is True
     assert env["result"] == {"id": "vm-1"}
     assert "apply_hint" not in env
+
+
+def test_emit_request_table_applied_no_body_does_not_dump_json(capsys) -> None:
+    emit_request({"method": "DELETE", "url": "/x/1"}, applied=True, result=None, fmt="table")
+    out = capsys.readouterr().out
+    assert "APPLIED" in out and "DELETE" in out
+    assert "(no body)" in out
+    assert "applied" not in out  # the JSON envelope key must not leak into table mode
+
+
+def test_emit_request_json_applied_emits_envelope(capsys) -> None:
+    emit_request({"method": "POST", "url": "/x"}, applied=True, result={"id": "1"}, fmt="json")
+    env = json.loads(capsys.readouterr().out)
+    assert env["applied"] is True and env["result"] == {"id": "1"}

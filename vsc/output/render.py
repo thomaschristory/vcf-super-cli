@@ -121,9 +121,14 @@ def emit_request(
         console = console or Console()
         status = "APPLIED" if applied else "DRY-RUN"
         console.print(f"[bold]{status}[/bold] {plan['method']} {plan['url']}")
-        if applied and result is not None and to_table(result, console):
-            return
         if not applied:
             console.print(f"({_APPLY_HINT})")
             return
+        # Applied: show the result as a table, or a clean scalar/empty line — never
+        # fall through to dumping the whole JSON envelope in table mode.
+        if result is None:
+            console.print("(no body)")
+        elif not to_table(result, console):
+            console.print(to_json(result))
+        return
     print(to_json(env))

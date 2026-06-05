@@ -90,6 +90,10 @@ ignore = [
 "vsc/cli/**" = [
     "B008",              # typer.Option/Argument in defaults is the Typer idiom
 ]
+"vsc/gen/**" = [
+    "PLR0911",           # type dispatch tables legitimately have many returns
+    "PLR0912",           # ...and many branches
+]
 "tests/**" = [
     "PLR2004",           # magic values in tests are fine
     "PLR0915",           # lifecycle tests legitimately need many statements
@@ -106,7 +110,7 @@ plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 # The vcf-sdk vAPI bindings and pyVmomi ship no type stubs.
-module = ["com.vmware.*", "vcf.*", "vmware.*", "pyVmomi.*", "pyVim.*"]
+module = ["com", "com.*", "vcf", "vcf.*", "vmware", "vmware.*", "pyVmomi.*", "pyVim.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

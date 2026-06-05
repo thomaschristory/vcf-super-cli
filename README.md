@@ -1,5 +1,6 @@
 # vcf-super-cli (`vsc`)
 
+[![PyPI](https://img.shields.io/pypi/v/vcf-super-cli.svg)](https://pypi.org/project/vcf-super-cli/)
 [![CI](https://github.com/thomaschristory/vcf-super-cli/actions/workflows/test.yml/badge.svg)](https://github.com/thomaschristory/vcf-super-cli/actions/workflows/test.yml)
 [![Lint](https://github.com/thomaschristory/vcf-super-cli/actions/workflows/lint.yml/badge.svg)](https://github.com/thomaschristory/vcf-super-cli/actions/workflows/lint.yml)
 [![Docs](https://github.com/thomaschristory/vcf-super-cli/actions/workflows/docs.yml/badge.svg)](https://thomaschristory.github.io/vcf-super-cli/)
@@ -13,11 +14,13 @@ mirrors the real VCF 9 API instead of being hand-maintained.
 ```console
 $ vsc vsphere vm list --profile prod
 $ vsc vsphere host get --host host-42
-$ vsc nsx segment list --output table
+$ vsc nsx segments list --output table
+$ vsc vsphere power stop vm-42 --apply        # writes are dry-run without --apply
 ```
 
-> ⚠️ **Alpha / pre-release.** v0.1 is **read-only** (vSphere + NSX inventory).
-> Writes arrive in v0.2 — **dry-run by default**, nothing changes without `--apply`.
+> ⚠️ **Alpha / pre-release.** Reads (vSphere + NSX inventory) and writes are both
+> available. **Writes are dry-run by default** — nothing changes without `--apply`,
+> and a dry-run never opens a connection.
 
 ## Why
 
@@ -26,8 +29,8 @@ $ vsc nsx segment list --output table
   NSX from one generator.
 - **Modern.** REST-first via `vmware-vcenter`, with `pyVmomi` as a fallback where
   REST lacks coverage.
-- **Safe by default.** v0.1 is read-only; writes (v0.2) preview as dry-runs unless
-  you pass `--apply`.
+- **Safe by default.** Writes preview as dry-runs unless you pass `--apply`; a
+  dry-run never opens a connection.
 - **Agent-friendly.** Deterministic command shape, machine-readable JSON output,
   a stable error envelope with documented exit codes, and a bundled agent Skill.
 
@@ -35,16 +38,25 @@ $ vsc nsx segment list --output table
 
 | Area | Status |
 |------|--------|
-| vSphere / vCenter read (`vsc vsphere …`) | v0.1 |
-| NSX **Policy API** read (`vsc nsx …`) | v0.1 |
-| Writes (dry-run + `--apply`) | v0.2 |
+| vSphere / vCenter read (`vsc vsphere …`) | ✅ v0.1 |
+| NSX **Policy API** read (`vsc nsx …`) | ✅ v0.1 |
+| Writes — dry-run by default + `--apply` (`vsc vsphere …` / `vsc nsx …`) | ✅ v0.2 |
+| Dynamic shell completion, per-field filter flags, pyVmomi fallback | v0.3 (planned) |
 | NSX Manager / Global-Manager, SDDC Manager, Operations, LCM | deferred |
 
 ## Install
 
 ```sh
-uv tool install vcf-super-cli      # (once published to PyPI)
-# or, from source:
+uv tool install vcf-super-cli      # recommended
+# or
+pipx install vcf-super-cli
+# or
+pip install vcf-super-cli
+```
+
+From source:
+
+```sh
 uv sync && uv run vsc --help
 ```
 

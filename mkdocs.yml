@@ -1,0 +1,39 @@
+site_name: vcf-super-cli
+site_description: Modern, agent-friendly CLI for VMware Cloud Foundation 9, generated from the vcf-sdk.
+site_url: https://thomaschristory.github.io/vcf-super-cli/
+repo_url: https://github.com/thomaschristory/vcf-super-cli
+repo_name: thomaschristory/vcf-super-cli
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Design: design.md

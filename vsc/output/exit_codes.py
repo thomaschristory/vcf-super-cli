@@ -32,3 +32,9 @@ class ExitCode(IntEnum):
 
     CONFIG = 6
     """Missing or invalid configuration/profile."""
+
+    CONFLICT = 7
+    """Resource conflict (already exists, in use, wrong state, concurrent change)."""
+
+    UNAVAILABLE = 8
+    """Target temporarily unavailable, busy, or the request timed out."""

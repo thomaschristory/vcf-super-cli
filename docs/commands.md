@@ -4,10 +4,12 @@ The `vsphere` and `nsx` command trees are **generated from the `vcf-sdk` vAPI
 bindings**, so `vsc --help` (and each sub-`--help`) is always the authoritative,
 version-accurate reference. This page is an overview.
 
-Every generated leaf exposes read verbs:
+Generated leaves expose read verbs:
 
 - `list` — list resources (optional `--filter '<json>'`)
-- `get <id>` — fetch one resource by id
+- `get <id>` — fetch one resource by id, **where the SDK provides a by-id GET**
+  (e.g. `vm`, `cluster`, `datacenter`, `datastore`; some leaves such as `host`,
+  `folder`, and `network` are `list`-only)
 
 ## `vsc vsphere …` (vCenter)
 

@@ -12,7 +12,8 @@ the `vcf-sdk` vAPI bindings and split into two product groups:
 - `vsc nsx …` — NSX Policy objects (segments, tier0s, tier1s, services, groups, security-policies, gateway-policies)
 
 Discover the live surface with `vsc --help`, `vsc vsphere --help`, `vsc nsx --help`,
-and `vsc vsphere vm --help`. Each leaf command has `get` (by id) and `list` verbs.
+and `vsc vsphere vm --help`. Each leaf has a `list` verb, plus `get <id>` where the
+SDK exposes a by-id GET (some leaves, e.g. host/folder/network, are list-only).
 
 ## Status
 

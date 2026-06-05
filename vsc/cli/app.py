@@ -21,6 +21,7 @@ from vsc.gen.discover import (
     vsphere_services,
 )
 from vsc.logging_config import configure_logging
+from vsc.pyvmomi.perf import perf_app
 
 
 def _build_app() -> typer.Typer:
@@ -43,8 +44,12 @@ def _build_app() -> typer.Typer:
         op for cls in nsx_services() for op in discover_operations(cls, "nsx", read_only=False)
     ]
 
+    # Generated vSphere commands, plus the curated pyVmomi fallback groups
+    # (perf/…) mounted alongside them under the same `vsc vsphere` tree.
+    vsphere_group = build_group(vsphere_ops, connect_for_backend)
+    vsphere_group.add_typer(perf_app, name="perf")
     app.add_typer(
-        build_group(vsphere_ops, connect_for_backend),
+        vsphere_group,
         name="vsphere",
         help="vSphere / vCenter commands (generated from vmware-vcenter).",
         no_args_is_help=True,

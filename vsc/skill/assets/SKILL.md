@@ -95,6 +95,9 @@ vsc --profile prod vsphere host list -o table
 vsc --profile prod nsx segments list
 vsc --profile prod nsx tier1s get <tier1-id>
 
+# pyVmomi fallback (read-only) — perf counters the REST surface lacks
+vsc --profile prod vsphere perf vm vm-42 --metric cpu.usage --metric mem.usage
+
 # Writes — preview first (dry-run), then --apply
 vsc --profile prod vsphere power stop vm-42                    # preview
 vsc --profile prod vsphere power stop vm-42 --apply            # execute

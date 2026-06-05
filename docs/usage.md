@@ -27,8 +27,7 @@ Completion is **fully offline** — it never opens a connection. It suggests:
 
 - enum option choices (e.g. `--power-state <TAB>` → `POWERED_ON`, `POWERED_OFF`),
 - output formats (`-o <TAB>` → `json`, `table`),
-- configured profile names (`--profile <TAB>`),
-- and, on `list` commands, per-field filter enum choices.
+- and configured profile names (`--profile <TAB>`).
 
 Completing a live resource id (e.g. `<vm>` from a real inventory) would require a
 network call and is deliberately **not** done in this release.

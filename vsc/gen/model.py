@@ -88,6 +88,7 @@ class Operation:
     http_method: str
     url_template: str
     path_vars: list[str] = field(default_factory=list)
+    path_var_map: dict[str, str] = field(default_factory=dict)
     params: list[Param] = field(default_factory=list)
     output_type: Any = None
     error_types: list[Any] = field(default_factory=list)
@@ -96,3 +97,8 @@ class Operation:
     def service_short(self) -> str:
         """The last segment of the vAPI interface id, e.g. ``VM`` -> ``vm``."""
         return self.iface_id.split(".")[-1].lower()
+
+    @property
+    def is_write(self) -> bool:
+        """True for mutating operations (anything other than ``GET``)."""
+        return self.http_method != "GET"

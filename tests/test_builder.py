@@ -278,7 +278,7 @@ def _synthetic_write_with_param(param_name: str) -> Operation:
 def test_injected_flags_do_not_collide_with_reserved_param_names() -> None:
     # A write op with a body param literally named 'apply' must not produce two
     # --apply option declarations; the user param is renamed.
-    sig, _spec = _build_signature(_synthetic_write_with_param("apply"))
+    sig, _spec, _fp = _build_signature(_synthetic_write_with_param("apply"))
     decls: list[str] = []
     for p in sig.parameters.values():
         info = p.default

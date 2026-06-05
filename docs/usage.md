@@ -25,9 +25,10 @@ vsc --show-completion             # print the script instead of installing
 
 Completion is **fully offline** — it never opens a connection. It suggests:
 
-- enum option choices (e.g. `--power-state <TAB>` → `POWERED_ON`, `POWERED_OFF`),
+- enum option choices (e.g. `--power-states <TAB>` → `POWERED_ON`, `POWERED_OFF`),
 - output formats (`-o <TAB>` → `json`, `table`),
-- and configured profile names (`--profile <TAB>`).
+- configured profile names (`--profile <TAB>`),
+- and per-field `list` filter enum choices.
 
 Completing a live resource id (e.g. `<vm>` from a real inventory) would require a
 network call and is deliberately **not** done in this release.

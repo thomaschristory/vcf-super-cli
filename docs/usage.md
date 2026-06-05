@@ -14,6 +14,25 @@ vsc --profile prod vsphere vm list -o table   # table
 
 Only `json` and `table` are accepted; anything else is rejected with exit code `2`.
 
+## Shell completion
+
+Install completion for your shell once:
+
+```sh
+vsc --install-completion          # bash, zsh, fish, PowerShell
+vsc --show-completion             # print the script instead of installing
+```
+
+Completion is **fully offline** — it never opens a connection. It suggests:
+
+- enum option choices (e.g. `--power-state <TAB>` → `POWERED_ON`, `POWERED_OFF`),
+- output formats (`-o <TAB>` → `json`, `table`),
+- configured profile names (`--profile <TAB>`),
+- and, on `list` commands, per-field filter enum choices.
+
+Completing a live resource id (e.g. `<vm>` from a real inventory) would require a
+network call and is deliberately **not** done in this release.
+
 ## Error envelope
 
 Errors are written to **stderr** as a stable JSON object:

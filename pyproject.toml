@@ -1,6 +1,6 @@
 [project]
 name = "vcf-super-cli"
-version = "0.2.0"
+version = "0.3.0"
 description = "Modern, agent-friendly CLI for VMware Cloud Foundation 9, with a command tree generated dynamically from the vcf-sdk vAPI bindings."
 readme = "README.md"
 requires-python = ">=3.12"

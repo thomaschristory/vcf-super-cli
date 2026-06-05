@@ -41,7 +41,8 @@ $ vsc vsphere power stop vm-42 --apply        # writes are dry-run without --app
 | vSphere / vCenter read (`vsc vsphere …`) | ✅ v0.1 |
 | NSX **Policy API** read (`vsc nsx …`) | ✅ v0.1 |
 | Writes — dry-run by default + `--apply` (`vsc vsphere …` / `vsc nsx …`) | ✅ v0.2 |
-| Dynamic shell completion, per-field filter flags, pyVmomi fallback | v0.3 (planned) |
+| Ergonomics — offline shell completion, per-field filter flags + paging, pyVmomi fallback (`perf`/`events`/`tasks`/`inventory`) | ✅ v0.3 |
+| Live resource-id completion | planned |
 | NSX Manager / Global-Manager, SDDC Manager, Operations, LCM | deferred |
 
 ## Install

@@ -7,6 +7,42 @@ versions may include breaking changes.
 
 ## [Unreleased]
 
+## v0.3.0 — 2026-06-05
+
+Ergonomics: friendlier filtering and paging, offline shell completion, and a
+pyVmomi fallback surface for gaps the REST/vAPI layer doesn't cover. The
+agent-facing contract is unchanged — stable JSON, error envelope, exit codes,
+and writes still dry-run by default.
+
+### Added
+
+- **Static shell completion** (#32), fully offline — never opens a connection.
+  Completes enum option choices, output formats, configured profile names, and
+  `list` filter enum values. Install with `vsc --install-completion`. (Live
+  resource-id completion is intentionally deferred to a later release.)
+- **Per-field filter flags** (#33). `list` commands flatten the SDK filter spec
+  into typed `--<field>` options (repeatable for list/set fields; enum choices
+  validated and completed), e.g. `vsc vsphere vm list --power-states POWERED_ON
+  --names web-1`. The raw `--filter '<json>'` blob stays as a base layer that
+  per-field flags override.
+- **Pagination helpers** (#33): `--all` follows the NSX cursor across pages;
+  `--max-items N` caps the total; `--limit N` is a client-side cap for
+  non-paginated (vSphere) lists. Without `--all`, a paginated `list` returns one
+  page and surfaces its `cursor` for manual paging.
+- **pyVmomi fallback commands** (read-only) under `vsc vsphere`, for areas the
+  REST/vAPI surface lacks — same JSON / error-envelope / exit-code contract:
+  - `perf vm|host --metric <group.name>` — performance counters via the
+    PerformanceManager (#34).
+  - `events list [--vm|--host] [--since 1h]` and `tasks list` — recent events
+    and recent/running tasks (#35).
+  - `inventory vm|host [--props <path>]…` — a PropertyCollector property walk
+    (#36).
+
+### Changed
+
+- Documentation and the bundled agent `SKILL.md` describe completion, the filter
+  and paging flags, and the pyVmomi fallback surface.
+
 ## v0.2.0 — 2026-06-05
 
 First PyPI release. Adds the **write** surface on top of the v0.1 read-only

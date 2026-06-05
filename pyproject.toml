@@ -25,6 +25,7 @@ dependencies = [
     "structlog>=24.1",
     "platformdirs>=4.2",
     "ruamel.yaml>=0.18",
+    "keyring>=25.0",
     "vmware-vcenter>=9.1.0.0",
     "vcf-nsx>=9.1.0.0",
     "pyvmomi>=9.1.0.0",

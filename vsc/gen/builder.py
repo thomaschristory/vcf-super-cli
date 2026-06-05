@@ -15,6 +15,7 @@ from typing import Any
 import requests
 import typer
 
+from vsc.config.store import ConfigError
 from vsc.connect.targets import TargetNotConfigured
 from vsc.gen.model import Operation, Param, ParamKind
 from vsc.gen.params import CoercionError, coerce_value
@@ -131,6 +132,8 @@ def make_command(op: Operation, connect_fn: ConnectFn) -> Callable[..., None]:
             emit(result, fmt)
         except TargetNotConfigured as exc:
             _fail_config(exc, fmt)
+        except ConfigError as exc:
+            _fail(ExitCode.CONFIG, "ConfigError", exc, fmt)
         except requests.exceptions.RequestException as exc:
             env, code = envelope_for_transport(exc)
             render_error(env, fmt)

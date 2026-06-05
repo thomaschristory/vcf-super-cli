@@ -10,16 +10,19 @@ from __future__ import annotations
 import typer
 
 from vsc import __version__
-from vsc.connect.targets import connect_for_backend
+from vsc.cli.profiles import profiles_app
+from vsc.connect.targets import connect_for_backend, set_active_profile
 from vsc.gen.builder import build_group
 from vsc.gen.discover import (
     discover_operations,
     nsx_services,
     vsphere_services,
 )
+from vsc.logging_config import configure_logging
 
 
 def _build_app() -> typer.Typer:
+    configure_logging()
     app = typer.Typer(
         name="vsc",
         help="CLI for VMware Cloud Foundation 9 (vSphere + NSX), generated from the vcf-sdk.",
@@ -42,9 +45,16 @@ def _build_app() -> typer.Typer:
         help="NSX Policy commands (generated from vcf-nsx).",
         no_args_is_help=True,
     )
+    app.add_typer(profiles_app, name="profiles")
 
     @app.callback()
     def main_callback(
+        profile: str | None = typer.Option(
+            None,
+            "--profile",
+            "-p",
+            help="Named profile to use (overrides VSC_PROFILE and the config default).",
+        ),
         _version: bool = typer.Option(
             False,
             "--version",
@@ -55,6 +65,7 @@ def _build_app() -> typer.Typer:
         ),
     ) -> None:
         """Global options for ``vsc``."""
+        set_active_profile(profile)
 
     return app
 

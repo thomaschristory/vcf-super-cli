@@ -9,7 +9,7 @@ import com.vmware.vapi.std.errors_client as verr
 from com.vmware.vapi.std_client import LocalizableMessage
 from rich.console import Console
 
-from vsc.output.render import emit, jsonable, to_json, to_table
+from vsc.output.render import emit, jsonable, to_json, to_table, write_envelope
 
 
 def _sample_struct() -> object:
@@ -46,3 +46,22 @@ def test_emit_table_falls_back_to_json(capsys) -> None:
     emit(42, "table")
     out = capsys.readouterr().out
     assert json.loads(out) == 42
+
+
+def test_write_envelope_dry_run_shape() -> None:
+    plan = {"method": "DELETE", "url": "/x/1"}
+    env = write_envelope(plan, applied=False)
+    assert env == {
+        "applied": False,
+        "request": plan,
+        "apply_hint": "re-run with --apply to execute",
+    }
+    assert "result" not in env
+
+
+def test_write_envelope_applied_includes_result() -> None:
+    plan = {"method": "POST", "url": "/x"}
+    env = write_envelope(plan, applied=True, result={"id": "vm-1"})
+    assert env["applied"] is True
+    assert env["result"] == {"id": "vm-1"}
+    assert "apply_hint" not in env

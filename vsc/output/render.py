@@ -87,3 +87,43 @@ def emit(value: Any, fmt: str | OutputFormat = "json", *, console: Console | Non
             return
         # Fall back to JSON for non-tabular payloads (e.g. a single scalar).
     print(to_json(value))
+
+
+_APPLY_HINT = "re-run with --apply to execute"
+
+
+def write_envelope(plan: dict[str, Any], *, applied: bool, result: Any = None) -> dict[str, Any]:
+    """Build the stable write envelope shared by dry-run and apply.
+
+    Dry-run (``applied=False``) carries the plan and an apply hint and never a
+    result; apply (``applied=True``) carries the plan and the SDK response.
+    """
+    env: dict[str, Any] = {"applied": applied, "request": plan}
+    if applied:
+        env["result"] = jsonable(result)
+    else:
+        env["apply_hint"] = _APPLY_HINT
+    return env
+
+
+def emit_request(
+    plan: dict[str, Any],
+    *,
+    applied: bool,
+    result: Any = None,
+    fmt: str | OutputFormat = "json",
+    console: Console | None = None,
+) -> None:
+    """Print the write envelope (dry-run preview or applied result)."""
+    fmt = fmt.value if isinstance(fmt, OutputFormat) else fmt
+    env = write_envelope(plan, applied=applied, result=result)
+    if fmt == "table":
+        console = console or Console()
+        status = "APPLIED" if applied else "DRY-RUN"
+        console.print(f"[bold]{status}[/bold] {plan['method']} {plan['url']}")
+        if applied and result is not None and to_table(result, console):
+            return
+        if not applied:
+            console.print(f"({_APPLY_HINT})")
+            return
+    print(to_json(env))

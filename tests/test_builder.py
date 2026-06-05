@@ -12,9 +12,9 @@ import typer
 from com.vmware.vapi.std_client import LocalizableMessage
 from typer.testing import CliRunner
 
-from vsc.gen.builder import _collect_kwargs, make_command
+from vsc.gen.builder import _collect_kwargs, build_group, make_command
 from vsc.gen.discover import discover_operations, vsphere_services
-from vsc.gen.model import Param, ParamKind
+from vsc.gen.model import Operation, Param, ParamKind
 from vsc.output.exit_codes import ExitCode
 
 runner = CliRunner()
@@ -107,3 +107,106 @@ def test_collect_kwargs_enum_validation() -> None:
     assert _collect_kwargs(spec, {"state": "A"}) == {"state": "A"}
     with pytest.raises(ValueError):
         _collect_kwargs(spec, {"state": "C"})
+
+
+# --------------------------------------------------------------------------- #
+# v0.2: write commands — dry-run gate + --apply
+# --------------------------------------------------------------------------- #
+
+
+def _write_app(op: object, service_cls: type, connect_fn: object) -> typer.Typer:
+    op2 = dataclasses.replace(op, service_cls=service_cls)  # type: ignore[type-var]
+    app = typer.Typer()
+    app.command(op2.cli_verb)(make_command(op2, connect_fn))  # type: ignore[arg-type]
+    return app
+
+
+def test_write_dry_run_by_default_emits_plan_and_never_connects() -> None:
+    calls: list[str] = []
+
+    def connect(backend: str) -> object:
+        calls.append(backend)
+        return object()
+
+    app = _write_app(_vm_op("delete"), object, connect)
+    result = runner.invoke(app, ["vm-1"])  # no --apply
+    assert result.exit_code == 0, result.stdout
+    env = json.loads(result.stdout)
+    assert env["applied"] is False
+    assert env["request"]["method"] == "DELETE"
+    assert env["request"]["url"] == "/vcenter/vm/vm-1"
+    assert "apply_hint" in env and "result" not in env
+    assert calls == []  # invariant: dry-run opens no connection
+
+
+def test_write_apply_connects_invokes_and_emits_applied_envelope() -> None:
+    _CAPTURED.clear()
+    calls: list[str] = []
+
+    class FakeVM:
+        def __init__(self, _cfg: object) -> None:
+            pass
+
+        def delete(self, **kwargs: object) -> None:
+            _CAPTURED.update(kwargs)
+
+    def connect(backend: str) -> object:
+        calls.append(backend)
+        return object()
+
+    app = _write_app(_vm_op("delete"), FakeVM, connect)
+    result = runner.invoke(app, ["vm-1", "--apply"])
+    assert result.exit_code == 0, result.stdout
+    env = json.loads(result.stdout)
+    assert env["applied"] is True
+    assert env["request"]["method"] == "DELETE"
+    assert "result" in env
+    assert _CAPTURED == {"vm": "vm-1"}  # routed to the SDK method with coerced kwargs
+    assert calls == ["vsphere"]
+
+
+def test_write_apply_maps_conflict_error() -> None:
+    class FakeVM:
+        def __init__(self, _cfg: object) -> None:
+            pass
+
+        def delete(self, **_kwargs: object) -> None:
+            lm = LocalizableMessage(id="x", default_message="in use", args=[])
+            raise verr.AlreadyExists(messages=[lm], data=None)
+
+    app = _write_app(_vm_op("delete"), FakeVM, lambda _b: object())
+    result = runner.invoke(app, ["vm-1", "--apply"])
+    assert result.exit_code == int(ExitCode.CONFLICT)
+    assert json.loads(result.stderr)["error"]["kind"] == "ALREADY_EXISTS"
+
+
+def test_read_command_has_no_apply_flag() -> None:
+    app = _app_for(_vm_op("get"), object)
+    result = runner.invoke(app, ["vm-1", "--apply"])
+    assert result.exit_code == 2  # unknown option on a read command
+
+
+def _synthetic_put(op_id: str, verb: str) -> Operation:
+    return Operation(
+        backend="vsphere",
+        service_cls=object,
+        iface_id="com.vmware.vcenter.thing",
+        op_id=op_id,
+        method_name=op_id,
+        cli_verb=verb,
+        http_method="PUT",
+        url_template="/vcenter/thing/{id}",
+        path_vars=[],
+        path_var_map={},
+        params=[],
+    )
+
+
+def test_build_group_disambiguates_colliding_verbs() -> None:
+    ops = [_synthetic_put("alpha_set", "set"), _synthetic_put("beta_set", "set")]
+    root = build_group(ops, lambda _b: object())
+    group = next(g for g in root.registered_groups if g.name == "thing")
+    names = {c.name for c in group.typer_instance.registered_commands}
+    assert "set" in names  # first keeps the clean verb
+    assert "beta-set" in names  # second falls back to its op id, no overwrite
+    assert len(names) == 2

@@ -19,6 +19,7 @@ from vsc.config.store import ConfigError
 from vsc.connect.targets import TargetNotConfigured
 from vsc.gen.model import Operation, Param, ParamKind
 from vsc.gen.params import CoercionError, coerce_value
+from vsc.gen.preview import build_request_plan
 from vsc.output.errors import (
     envelope_for_transport,
     envelope_for_vapi,
@@ -26,11 +27,12 @@ from vsc.output.errors import (
     render_error,
 )
 from vsc.output.exit_codes import ExitCode
-from vsc.output.render import OutputFormat, emit
+from vsc.output.render import OutputFormat, emit, emit_request
 
 ConnectFn = Callable[[str], Any]
 
 _OUTPUT_PARAM = "_vsc_output"
+_APPLY_PARAM = "_vsc_apply"
 
 _ANNOTATIONS: dict[ParamKind, type] = {
     ParamKind.INTEGER: int,
@@ -60,7 +62,7 @@ def _help_text(param: Param) -> str:
 
 def _sig_name(param: Param, used: set[str]) -> str:
     name = param.name
-    if keyword.iskeyword(name) or name == _OUTPUT_PARAM or name in used:
+    if keyword.iskeyword(name) or name in (_OUTPUT_PARAM, _APPLY_PARAM) or name in used:
         name = f"{name}_"
     used.add(name)
     return name
@@ -106,6 +108,18 @@ def _build_signature(op: Operation) -> tuple[inspect.Signature, list[tuple[Param
             annotation=OutputFormat,
         )
     )
+    if op.is_write:
+        # Writes preview by default; --apply opts in to actually executing.
+        parameters.append(
+            inspect.Parameter(
+                _APPLY_PARAM,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                default=typer.Option(
+                    False, "--apply/--no-apply", help="Execute the change (default: dry-run)."
+                ),
+                annotation=bool,
+            )
+        )
     return inspect.Signature(parameters), spec
 
 
@@ -116,10 +130,16 @@ def make_command(op: Operation, connect_fn: ConnectFn) -> Callable[..., None]:
     def command(**kwargs: Any) -> None:
         raw_fmt = kwargs.get(_OUTPUT_PARAM, OutputFormat.json)
         fmt = raw_fmt.value if isinstance(raw_fmt, OutputFormat) else str(raw_fmt)
+        apply = bool(kwargs.get(_APPLY_PARAM, False))
         try:
             sdk_kwargs = _collect_kwargs(spec, kwargs)
         except CoercionError as exc:
             _fail_usage(exc, fmt)
+            return
+        # Dry-run by default: preview the resolved request and touch nothing — no
+        # connection is opened unless the write is explicitly applied.
+        if op.is_write and not apply:
+            emit_request(build_request_plan(op, sdk_kwargs), applied=False, fmt=fmt)
             return
         try:
             cfg = connect_fn(op.backend)
@@ -129,7 +149,12 @@ def make_command(op: Operation, connect_fn: ConnectFn) -> Callable[..., None]:
                 result = method(**sdk_kwargs)
             else:
                 result = service._invoke(op.op_id, sdk_kwargs)
-            emit(result, fmt)
+            if op.is_write:
+                emit_request(
+                    build_request_plan(op, sdk_kwargs), applied=True, result=result, fmt=fmt
+                )
+            else:
+                emit(result, fmt)
         except TargetNotConfigured as exc:
             _fail_config(exc, fmt)
         except ConfigError as exc:

@@ -357,34 +357,27 @@ def _run_list(
     cursor for manual paging). ``--all`` follows the cursor across pages; the caps
     slice the returned items client-side.
     """
-    if all_flag:
-
-        def fetch_page(cursor: str | None) -> tuple[list[Any], str | None]:
-            page_kwargs = dict(sdk_kwargs)
-            if cursor is not None:
-                page_kwargs["cursor"] = cursor
-            res = invoke(**page_kwargs)
-            if _is_cursor_list(res):
+    first = invoke(**sdk_kwargs)
+    if _is_cursor_list(first):
+        if all_flag:
+            # Seed the loop with the page we already fetched (no double-fetch).
+            def fetch_page(cursor: str | None) -> tuple[list[Any], str | None]:
+                res = first if cursor is None else invoke(**{**sdk_kwargs, "cursor": cursor})
                 return list(getattr(res, "results", []) or []), getattr(res, "cursor", None)
-            # Non-paginated backend: the whole response is the one and only page.
-            items = list(res) if isinstance(res, list) else [res]
-            return items, None
 
-        collected = follow_cursor(fetch_page, max_items=max_items)
-        return {"results": jsonable(collected), "result_count": len(collected)}
-
-    result = invoke(**sdk_kwargs)
-    cap = max_items if max_items is not None else limit
-    if _is_cursor_list(result):
-        data = jsonable(result)
+            collected = follow_cursor(fetch_page, max_items=max_items)
+            return {"results": jsonable(collected), "result_count": len(collected)}
+        data = jsonable(first)
+        cap = max_items if max_items is not None else limit
         if cap is not None and isinstance(data, dict) and isinstance(data.get("results"), list):
             data["results"] = data["results"][:cap]
         return data
-    # Plain list (vSphere) or scalar.
+    # Plain list (vSphere) or scalar. ``--all`` is a no-op here — the output shape
+    # is identical with or without it, so the stable JSON contract is preserved.
     plain_cap = limit if limit is not None else max_items
-    if plain_cap is not None and isinstance(result, list):
-        return result[:plain_cap]
-    return result
+    if plain_cap is not None and isinstance(first, list):
+        return first[:plain_cap]
+    return first
 
 
 def _fail(code: ExitCode, kind: str, exc: Exception, fmt: str) -> None:

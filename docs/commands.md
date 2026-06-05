@@ -87,4 +87,5 @@ vsc --profile prod vsphere vm list --limit 20         # first 20 only
 ```
 
 Without `--all`, a paginated `list` returns one page and surfaces the `cursor` so
-an agent can drive pagination itself.
+an agent can drive pagination itself. On non-paginated backends (vSphere) `--all`
+is a no-op — the output stays a plain array.

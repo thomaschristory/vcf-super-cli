@@ -160,3 +160,15 @@ def test_vsphere_limit_caps_plain_list() -> None:
     result = runner.invoke(app, ["--limit", "2"])
     out = json.loads(result.stdout)
     assert len(out) == 2
+
+
+def test_vsphere_all_keeps_array_shape() -> None:
+    # --all is meaningless on a non-paginated backend; it must NOT wrap the plain
+    # list into a {results, result_count} object — the top-level shape stays an array.
+    rows = [{"vm": f"vm-{i}"} for i in range(3)]
+    app = _app(_op("VM", "vsphere", "list"), _fake_vm_list(rows))
+    result = runner.invoke(app, ["--all"])
+    assert result.exit_code == 0, result.stdout
+    out = json.loads(result.stdout)
+    assert isinstance(out, list)
+    assert len(out) == 3

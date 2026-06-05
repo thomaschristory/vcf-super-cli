@@ -39,10 +39,21 @@ def _unwrap(ftype: Any) -> tuple[bool, Any]:
 
 
 def _enum_values(core: Any) -> list[str]:
-    vals = getattr(core, "values", None)
-    if not vals:
+    # vAPI EnumType has no ``.values``; the members live on the binding class.
+    binding_class = getattr(core, "binding_class", None)
+    if binding_class is None or not hasattr(binding_class, "get_values"):
         return []
-    return [str(v) for v in vals]
+    return [str(v) for v in binding_class.get_values()]
+
+
+def _loads_object(param_name: str, value: Any) -> Any:
+    """Parse a JSON value, raising :class:`CoercionError` on malformed input."""
+    if isinstance(value, (dict, list)):
+        return value
+    try:
+        return json.loads(str(value))
+    except (ValueError, TypeError) as exc:
+        raise CoercionError(f"{param_name!r}: invalid JSON ({exc})") from exc
 
 
 def _kind_of(core: Any) -> ParamKind:
@@ -168,7 +179,7 @@ def coerce_value(param: Param, value: Any) -> Any:
         coerced = [coerce_value(element, v) if element else v for v in items]
         return set(coerced) if kind is ParamKind.SET else coerced
     if kind is ParamKind.MAP:
-        obj = value if isinstance(value, dict) else json.loads(str(value))
+        obj = _loads_object(param.name, value)
         if not isinstance(obj, dict):
             raise CoercionError(f"{param.name!r}: expected a JSON object")
         return {
@@ -178,7 +189,7 @@ def coerce_value(param: Param, value: Any) -> Any:
             for k, v in obj.items()
         }
     if kind is ParamKind.STRUCT:
-        obj = value if isinstance(value, dict) else json.loads(str(value))
+        obj = _loads_object(param.name, value)
         if not isinstance(obj, dict):
             raise CoercionError(f"{param.name!r}: expected a JSON object")
         return coerce_struct(param, obj)

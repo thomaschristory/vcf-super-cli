@@ -69,18 +69,28 @@ def envelope_for_vapi(err: Any) -> tuple[dict[str, Any], ExitCode]:
 
 
 def envelope_for_transport(err: Exception) -> tuple[dict[str, Any], ExitCode]:
-    """Build the error envelope + exit code for a transport-layer error."""
+    """Build the error envelope + exit code for a transport-layer error.
+
+    TLS trust failures are a *connection* problem (failure to negotiate), not an
+    authentication failure — they get :class:`ExitCode.CONNECTION` plus a hint
+    pointing at the ``VSC_<BACKEND>_INSECURE`` escape hatch.
+    """
     name = err.__class__.__name__
-    code = ExitCode.AUTH if "SSL" in name else ExitCode.CONNECTION
+    message = str(err) or name
+    if "SSL" in name:
+        message = (
+            f"TLS verification failed: {message} "
+            "(for a self-signed/lab cert, set VSC_<BACKEND>_INSECURE=1)"
+        )
     env = {
         "error": {
-            "code": int(code),
+            "code": int(ExitCode.CONNECTION),
             "kind": name,
-            "message": str(err) or name,
+            "message": message,
             "details": None,
         }
     }
-    return env, code
+    return env, ExitCode.CONNECTION
 
 
 def render_error(env: dict[str, Any], fmt: str) -> None:

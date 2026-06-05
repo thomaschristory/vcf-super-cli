@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 
 import pytest
+from com.vmware.vcenter.vm_client import Power
 from vmware.vapi.bindings.struct import VapiStruct
 
 from vsc.gen.discover import discover_operations, vsphere_services
@@ -78,3 +79,16 @@ def test_coerce_struct_rejects_unknown_field() -> None:
     filt = next(p for o in ops if o.cli_verb == "list" for p in o.params if p.name == "filter")
     with pytest.raises(ValueError):
         coerce_value(filt, {"definitely_not_a_field": ["x"]})
+
+
+def test_struct_invalid_json_raises_coercion_error() -> None:
+    ops = discover_operations(vsphere_services()[0], "vsphere")
+    filt = next(p for o in ops if o.cli_verb == "list" for p in o.params if p.name == "filter")
+    with pytest.raises(ValueError):
+        coerce_value(filt, "{not valid json")
+
+
+def test_enum_values_extracted_from_binding_class() -> None:
+    p = param_from_type("state", Power.State.get_binding_type())
+    assert p.kind is ParamKind.ENUM
+    assert set(p.enum_values) == {"POWERED_OFF", "POWERED_ON", "SUSPENDED"}

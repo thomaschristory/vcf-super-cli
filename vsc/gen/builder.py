@@ -25,7 +25,7 @@ from vsc.output.errors import (
     render_error,
 )
 from vsc.output.exit_codes import ExitCode
-from vsc.output.render import emit
+from vsc.output.render import OutputFormat, emit
 
 ConnectFn = Callable[[str], Any]
 
@@ -78,7 +78,10 @@ def _build_signature(op: Operation) -> tuple[inspect.Signature, list[tuple[Param
         if param.in_path:
             default = typer.Argument(... if param.required else None, help=help_text)
         else:
-            opt = f"--{param.name.replace('_', '-')}"
+            kebab = param.name.replace("_", "-")
+            # Boolean options need a dual flag so the user can send False, not
+            # just True; otherwise only the positive flag exists.
+            opt = f"--{kebab}/--no-{kebab}" if param.kind is ParamKind.BOOLEAN else f"--{kebab}"
             default = typer.Option(
                 ... if param.required else None,
                 opt,
@@ -98,8 +101,8 @@ def _build_signature(op: Operation) -> tuple[inspect.Signature, list[tuple[Param
         inspect.Parameter(
             _OUTPUT_PARAM,
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            default=typer.Option("json", "--output", "-o", help="json|table"),
-            annotation=str,
+            default=typer.Option(OutputFormat.json, "--output", "-o", help="Output format."),
+            annotation=OutputFormat,
         )
     )
     return inspect.Signature(parameters), spec
@@ -110,11 +113,13 @@ def make_command(op: Operation, connect_fn: ConnectFn) -> Callable[..., None]:
     signature, spec = _build_signature(op)
 
     def command(**kwargs: Any) -> None:
-        fmt = kwargs.get(_OUTPUT_PARAM, "json")
+        raw_fmt = kwargs.get(_OUTPUT_PARAM, OutputFormat.json)
+        fmt = raw_fmt.value if isinstance(raw_fmt, OutputFormat) else str(raw_fmt)
         try:
             sdk_kwargs = _collect_kwargs(spec, kwargs)
         except CoercionError as exc:
-            raise typer.BadParameter(str(exc)) from exc
+            _fail_usage(exc, fmt)
+            return
         try:
             cfg = connect_fn(op.backend)
             service = op.service_cls(cfg)
@@ -157,17 +162,18 @@ def _collect_kwargs(spec: list[tuple[Param, str]], kwargs: dict[str, Any]) -> di
     return sdk_kwargs
 
 
-def _fail_config(exc: Exception, fmt: str) -> None:
-    env = {
-        "error": {
-            "code": int(ExitCode.CONFIG),
-            "kind": "TargetNotConfigured",
-            "message": str(exc),
-            "details": None,
-        }
-    }
+def _fail(code: ExitCode, kind: str, exc: Exception, fmt: str) -> None:
+    env = {"error": {"code": int(code), "kind": kind, "message": str(exc), "details": None}}
     render_error(env, fmt)
-    raise typer.Exit(int(ExitCode.CONFIG)) from exc
+    raise typer.Exit(int(code)) from exc
+
+
+def _fail_config(exc: Exception, fmt: str) -> None:
+    _fail(ExitCode.CONFIG, "TargetNotConfigured", exc, fmt)
+
+
+def _fail_usage(exc: Exception, fmt: str) -> None:
+    _fail(ExitCode.USAGE, "InvalidArgument", exc, fmt)
 
 
 def build_group(operations: list[Operation], connect_fn: ConnectFn) -> typer.Typer:

@@ -2,9 +2,14 @@
 
 These dataclasses are the generator's intermediate representation. ``discover``
 populates them from the SDK's vAPI metadata; ``params`` and ``builder`` consume
-them. They carry only plain Python data plus opaque references to the original
-vAPI type objects (``raw_type``) and binding classes (``struct_class``) needed at
+them. They carry plain Python data plus opaque references to the original vAPI
+type objects (``raw_type``) and binding classes (``struct_class``) used at
 invocation time.
+
+A few fields are captured now but consumed later: ``is_body`` / ``in_query`` feed
+HTTP request routing for the v0.2 write surface, and ``output_type`` /
+``error_types`` are reserved for richer table/error rendering. They are populated
+eagerly so discovery stays the single source of truth.
 """
 
 from __future__ import annotations

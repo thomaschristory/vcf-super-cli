@@ -48,8 +48,9 @@ def test_unknown_vapi_error_is_generic() -> None:
 def test_transport_errors() -> None:
     _, conn = envelope_for_transport(requests.exceptions.ConnectionError("down"))
     assert conn is ExitCode.CONNECTION
-    _, ssl = envelope_for_transport(requests.exceptions.SSLError("bad cert"))
-    assert ssl is ExitCode.AUTH
+    env, ssl = envelope_for_transport(requests.exceptions.SSLError("bad cert"))
+    assert ssl is ExitCode.CONNECTION  # TLS trust failure is a connection problem
+    assert "INSECURE" in env["error"]["message"]
 
 
 def test_is_vapi_error() -> None:

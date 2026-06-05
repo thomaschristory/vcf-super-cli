@@ -17,6 +17,13 @@ from rich.table import Table
 from vmware.vapi.bindings.struct import VapiStruct
 
 
+class OutputFormat(str, enum.Enum):
+    """Supported ``--output`` formats."""
+
+    json = "json"
+    table = "table"
+
+
 def jsonable(value: Any) -> Any:
     """Convert a vAPI result into a JSON-serializable structure."""
     if isinstance(value, VapiStruct):
@@ -71,8 +78,9 @@ def _cell(value: Any) -> str:
     return str(value)
 
 
-def emit(value: Any, fmt: str = "json", *, console: Console | None = None) -> None:
+def emit(value: Any, fmt: str | OutputFormat = "json", *, console: Console | None = None) -> None:
     """Print a result in the requested format (``json`` or ``table``)."""
+    fmt = fmt.value if isinstance(fmt, OutputFormat) else fmt
     if fmt == "table":
         console = console or Console()
         if to_table(value, console):

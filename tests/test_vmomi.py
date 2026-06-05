@@ -47,6 +47,13 @@ def test_nested_data_object_with_moref_and_datetime() -> None:
     assert out["id"] == {"counterId": 2, "instance": ""}
 
 
+def test_managed_object_nested_in_data_object() -> None:
+    # A managed object reached *through* a data object's property must collapse to
+    # its moref via recursion (ManagedObject is handled before DynamicData).
+    em = vim.PerfEntityMetric(entity=vim.VirtualMachine("vm-9", None), sampleInfo=[], value=[])
+    assert vmomi_jsonable(em) == {"entity": {"type": "VirtualMachine", "value": "vm-9"}}
+
+
 # --------------------------------------------------------------------------- #
 # connect_vmomi
 # --------------------------------------------------------------------------- #
@@ -100,4 +107,25 @@ def test_connect_vmomi_insecure_disables_verification(monkeypatch: Any) -> None:
     vmomi.connect_vmomi()
     ctx = captured["sslContext"]
     assert ctx.verify_mode.name == "CERT_NONE"  # verification disabled for insecure
+    vmomi.reset_vmomi_cache()
+
+
+def test_connect_vmomi_secure_requires_verification(monkeypatch: Any) -> None:
+    # The default (verify=True) MUST keep TLS verification on — a regression that
+    # disabled it would otherwise pass silently.
+    vmomi.reset_vmomi_cache()
+    captured: dict[str, Any] = {}
+
+    class _Target:
+        server = "vc.example"
+        username = "u"
+        password = "p"
+        verify = True
+
+    monkeypatch.setattr(vmomi, "resolve_target", lambda _backend: _Target())
+    monkeypatch.setattr(vmomi, "SmartConnect", lambda **kw: captured.update(kw) or object())
+    vmomi.connect_vmomi()
+    ctx = captured["sslContext"]
+    assert ctx.verify_mode.name == "CERT_REQUIRED"
+    assert ctx.check_hostname is True
     vmomi.reset_vmomi_cache()

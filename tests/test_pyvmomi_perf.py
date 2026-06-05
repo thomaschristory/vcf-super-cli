@@ -106,6 +106,14 @@ def test_perf_vm_cli_emits_json(monkeypatch: pytest.MonkeyPatch) -> None:
     assert out[0]["series"][0]["metric"] == "cpu.usage"
 
 
+def test_perf_host_cli_emits_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    pm = _FakePM([_counter(2, "cpu", "usage", "average")], [_entity_metric()])
+    monkeypatch.setattr("vsc.pyvmomi.runner.connect_vmomi", lambda: _fake_si(pm))
+    result = runner.invoke(_app(), ["perf", "host", "host-12", "--metric", "cpu.usage"])
+    assert result.exit_code == 0, result.stdout
+    assert json.loads(result.stdout)[0]["series"][0]["metric"] == "cpu.usage"
+
+
 def test_perf_unknown_metric_is_usage_error(monkeypatch: pytest.MonkeyPatch) -> None:
     pm = _FakePM([_counter(2, "cpu", "usage", "average")], [])
     monkeypatch.setattr("vsc.pyvmomi.runner.connect_vmomi", lambda: _fake_si(pm))

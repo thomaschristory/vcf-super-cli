@@ -91,7 +91,11 @@ def vmomi_jsonable(obj: Any) -> Any:
             if prop.name in _SKIP_PROPS:
                 continue
             value = getattr(obj, prop.name, None)
-            if value is None or value == []:
+            if value is None:
+                continue
+            # Skip empty collections without `== []` — equality on a managed-object
+            # value would dereference a missing ``_moId`` and raise.
+            if isinstance(value, (list, tuple)) and not value:
                 continue
             result[prop.name] = vmomi_jsonable(value)
         return result

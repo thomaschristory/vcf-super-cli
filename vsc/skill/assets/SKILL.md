@@ -61,6 +61,9 @@ Write failures use the same error envelope + exit codes — notably `7` CONFLICT
 - **Exit codes** are stable — branch on these, not on message text:
   `0` ok · `1` generic · `2` usage · `3` auth · `4` not-found · `5` connection ·
   `6` config · `7` conflict · `8` unavailable.
+- **Shell completion is offline.** `vsc --install-completion` sets it up; it
+  suggests enum choices, output formats, and profile names. It never completes
+  live resource ids (that would need a network call).
 
 ## Targeting an environment
 

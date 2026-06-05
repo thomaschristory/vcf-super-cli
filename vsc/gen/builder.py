@@ -18,6 +18,7 @@ from vmware.vapi.exception import CoreException
 
 from vsc.config.store import ConfigError
 from vsc.connect.targets import TargetNotConfigured
+from vsc.gen.complete import enum_completer, output_format_completer
 from vsc.gen.model import Operation, Param, ParamKind
 from vsc.gen.params import CoercionError, coerce_value
 from vsc.gen.preview import build_request_plan
@@ -94,11 +95,18 @@ def _build_signature(op: Operation) -> tuple[inspect.Signature, list[tuple[Param
             # Boolean options need a dual flag so the user can send False, not
             # just True; otherwise only the positive flag exists.
             opt = f"--{kebab}/--no-{kebab}" if param.kind is ParamKind.BOOLEAN else f"--{kebab}"
+            # Offline completion: enum options complete from their fixed choices.
+            autocompletion = (
+                enum_completer(param.enum_values)
+                if param.kind is ParamKind.ENUM and param.enum_values
+                else None
+            )
             default = typer.Option(
                 ... if param.required else None,
                 opt,
                 help=help_text,
                 hide_input=param.kind is ParamKind.SECRET,
+                autocompletion=autocompletion,
             )
         parameters.append(
             inspect.Parameter(
@@ -113,7 +121,13 @@ def _build_signature(op: Operation) -> tuple[inspect.Signature, list[tuple[Param
         inspect.Parameter(
             _OUTPUT_PARAM,
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            default=typer.Option(OutputFormat.json, "--output", "-o", help="Output format."),
+            default=typer.Option(
+                OutputFormat.json,
+                "--output",
+                "-o",
+                help="Output format.",
+                autocompletion=output_format_completer(),
+            ),
             annotation=OutputFormat,
         )
     )

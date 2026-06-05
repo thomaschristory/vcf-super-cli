@@ -14,6 +14,7 @@ from vsc.cli.profiles import profiles_app
 from vsc.cli.skill import skill_app
 from vsc.connect.targets import connect_for_backend, set_active_profile
 from vsc.gen.builder import build_group
+from vsc.gen.complete import profile_completer
 from vsc.gen.discover import (
     discover_operations,
     nsx_services,
@@ -64,6 +65,7 @@ def _build_app() -> typer.Typer:
             "--profile",
             "-p",
             help="Named profile to use (overrides VSC_PROFILE and the config default).",
+            autocompletion=profile_completer(),
         ),
         _version: bool = typer.Option(
             False,

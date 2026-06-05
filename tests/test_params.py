@@ -92,3 +92,37 @@ def test_enum_values_extracted_from_binding_class() -> None:
     p = param_from_type("state", Power.State.get_binding_type())
     assert p.kind is ParamKind.ENUM
     assert set(p.enum_values) == {"POWERED_OFF", "POWERED_ON", "SUSPENDED"}
+
+
+def test_scalar_double_and_aware_datetime_passthrough() -> None:
+    assert coerce_scalar(ParamKind.DOUBLE, "2.5") == 2.5
+    aware = dt.datetime(2026, 6, 5, tzinfo=dt.UTC)
+    assert coerce_scalar(ParamKind.DATETIME, aware) is aware
+
+
+def test_dynamic_kind_parses_json_else_passthrough() -> None:
+    p = Param(name="d", kind=ParamKind.DYNAMIC, required=False)
+    assert coerce_value(p, '{"a": 1}') == {"a": 1}
+    assert coerce_value(p, "plain-string") == "plain-string"
+
+
+def test_set_from_json_array_string_with_int_elements() -> None:
+    p = Param(
+        name="ids",
+        kind=ParamKind.SET,
+        required=False,
+        element=Param("", ParamKind.INTEGER, False),
+    )
+    result = coerce_value(p, "[1, 2, 2]")
+    assert result == {1, 2}
+
+
+def test_map_with_integer_values() -> None:
+    p = Param(
+        name="m",
+        kind=ParamKind.MAP,
+        required=False,
+        key_kind=ParamKind.STRING,
+        value_kind=ParamKind.INTEGER,
+    )
+    assert coerce_value(p, '{"a": "3"}') == {"a": 3}

@@ -1,0 +1,31 @@
+name: e2e
+
+# Live tests against a real vCenter/NSX. Manual only; reads connection details
+# from repository secrets. Individual tests self-skip when their backend's
+# secrets are not configured.
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Sync (dev)
+        run: uv sync --group dev
+      - name: Run e2e
+        env:
+          VSC_E2E: "1"
+          VSC_VSPHERE_SERVER: ${{ secrets.VSC_VSPHERE_SERVER }}
+          VSC_VSPHERE_USERNAME: ${{ secrets.VSC_VSPHERE_USERNAME }}
+          VSC_VSPHERE_PASSWORD: ${{ secrets.VSC_VSPHERE_PASSWORD }}
+          VSC_VSPHERE_INSECURE: ${{ secrets.VSC_VSPHERE_INSECURE }}
+          VSC_NSX_SERVER: ${{ secrets.VSC_NSX_SERVER }}
+          VSC_NSX_USERNAME: ${{ secrets.VSC_NSX_USERNAME }}
+          VSC_NSX_PASSWORD: ${{ secrets.VSC_NSX_PASSWORD }}
+          VSC_NSX_INSECURE: ${{ secrets.VSC_NSX_INSECURE }}
+        run: uv run pytest tests/e2e -v

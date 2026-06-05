@@ -68,6 +68,32 @@ def envelope_for_vapi(err: Any) -> tuple[dict[str, Any], ExitCode]:
     return env, code
 
 
+# pyVmomi fault class name -> exit code. Unlisted faults -> ExitCode.ERROR.
+VMOMI_FAULT_TO_EXIT: dict[str, ExitCode] = {
+    "NotAuthenticated": ExitCode.AUTH,
+    "InvalidLogin": ExitCode.AUTH,
+    "NoPermission": ExitCode.AUTH,
+    "ManagedObjectNotFound": ExitCode.NOT_FOUND,
+    "NotFound": ExitCode.NOT_FOUND,
+    "InvalidArgument": ExitCode.USAGE,
+    "HostConnectFault": ExitCode.CONNECTION,
+    "HostCommunication": ExitCode.CONNECTION,
+}
+
+
+def envelope_for_vmomi(err: Exception) -> tuple[dict[str, Any], ExitCode]:
+    """Build the error envelope + exit code for a pyVmomi (vim/vmodl) fault.
+
+    Faults are dispatched on their (namespace-stripped) class name; the localized
+    ``msg`` is surfaced as the message.
+    """
+    kind = type(err).__name__.rsplit(".", 1)[-1]
+    code = VMOMI_FAULT_TO_EXIT.get(kind, ExitCode.ERROR)
+    message = getattr(err, "msg", None) or str(err) or kind
+    env = {"error": {"code": int(code), "kind": kind, "message": message, "details": None}}
+    return env, code
+
+
 def envelope_for_transport(err: Exception) -> tuple[dict[str, Any], ExitCode]:
     """Build the error envelope + exit code for a transport-layer error.
 

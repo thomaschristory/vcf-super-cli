@@ -89,9 +89,15 @@ ignore = [
 "vsc/cli/**" = [
     "B008",              # typer.Option/Argument in defaults is the Typer idiom
 ]
+"vsc/pyvmomi/**" = [
+    "B008",              # typer.Option/Argument in defaults is the Typer idiom
+]
 "vsc/gen/**" = [
     "PLR0911",           # type dispatch tables legitimately have many returns
     "PLR0912",           # ...and many branches
+]
+"vsc/connect/vmomi.py" = [
+    "PLR0911",           # vmomi_jsonable is a type-dispatch table (many returns)
 ]
 "tests/**" = [
     "PLR2004",           # magic values in tests are fine
@@ -111,6 +117,14 @@ plugins = ["pydantic.mypy"]
 # The vcf-sdk vAPI bindings and pyVmomi ship no type stubs.
 module = ["com", "com.*", "vcf", "vcf.*", "vmware", "vmware.*", "pyVmomi.*", "pyVim.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# pyVmomi/pyVim are dynamically typed (attributes synthesized at runtime); skipping
+# their analysis treats their surface as Any rather than flagging every vim.* access
+# and untyped SmartConnect/Disconnect call.
+module = ["pyVmomi", "pyVmomi.*", "pyVim", "pyVim.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers --strict-config --ignore=tests/e2e"

@@ -46,10 +46,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["vsc"]
-
-[tool.hatch.build.targets.wheel.force-include]
-# Bundled agent Skill travels with the install (lives outside the package tree).
-"skills/vcf-super-cli" = "skills/vcf-super-cli"
+# The bundled agent Skill (vsc/skill/assets/SKILL.md) ships as package data, so it
+# travels with the install and is exportable via `vsc skill export`.
 
 [dependency-groups]
 dev = [

@@ -36,4 +36,8 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Install: install.md
+  - Profiles: profiles.md
+  - Commands: commands.md
+  - Output & errors: usage.md
   - Design: design.md

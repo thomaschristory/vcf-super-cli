@@ -11,6 +11,7 @@ import typer
 
 from vsc import __version__
 from vsc.cli.profiles import profiles_app
+from vsc.cli.skill import skill_app
 from vsc.connect.targets import connect_for_backend, set_active_profile
 from vsc.gen.builder import build_group
 from vsc.gen.discover import (
@@ -46,6 +47,7 @@ def _build_app() -> typer.Typer:
         no_args_is_help=True,
     )
     app.add_typer(profiles_app, name="profiles")
+    app.add_typer(skill_app, name="skill")
 
     @app.callback()
     def main_callback(

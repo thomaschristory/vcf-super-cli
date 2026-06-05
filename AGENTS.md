@@ -33,5 +33,5 @@ Do not push directly to `main`. See open issues for the roadmap.
 | Connections / auth | `vsc/connect/` |
 | Profiles / config | `vsc/config/` |
 | Output, errors, exit codes | `vsc/output/` |
-| Bundled agent Skill | `skills/vcf-super-cli/` |
+| Bundled agent Skill | `vsc/skill/assets/SKILL.md` (export via `vsc skill export`) |
 | Design spec | `docs/superpowers/specs/` |

@@ -30,7 +30,7 @@ Generated from `com.vmware.vcenter`:
 | `resource-pool` | `vsc vsphere resource-pool create --spec '<json>' --apply` |
 | `power` | `vsc vsphere power start\|stop\|reset\|suspend <vm> --apply` |
 | `cpu` / `memory` / `disk` / `ethernet` | VM hardware reads + writes, e.g. `vsc vsphere cpu update <vm> --spec '<json>' --apply` |
-| `perf` | **pyVmomi fallback** — performance counters the REST/vAPI surface lacks: `vsc vsphere perf vm <vm> --metric cpu.usage`, `vsc vsphere perf host <host> --metric mem.usage` |
+| `perf` / `events` / `tasks` | **pyVmomi fallback** (read-only) — perf counters, recent events, and recent/running tasks the REST/vAPI surface lacks (see below) |
 
 ### pyVmomi fallback commands
 
@@ -42,6 +42,11 @@ API. Those commands live under `vsc vsphere` alongside the generated ones, are
   counters via the PerformanceManager. Metrics are `group.name` (e.g. `cpu.usage`)
   or `group.name.rollup` (e.g. `cpu.usage.average`); repeat `--metric` for several.
 - `vsc vsphere perf host <host> …` — the same for an ESXi host.
+- `vsc vsphere events list [--vm <vm> | --host <host>] [--since 1h] [--max-count N]`
+  — recent events via the EventManager. `--since` takes a duration (`30s`/`15m`/
+  `2h`/`1d`); scope to at most one entity.
+- `vsc vsphere tasks list [--max-count N]` — recent and running tasks via the
+  TaskManager.
 
 ## `vsc nsx …` (NSX Policy)
 

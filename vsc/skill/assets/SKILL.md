@@ -95,8 +95,10 @@ vsc --profile prod vsphere host list -o table
 vsc --profile prod nsx segments list
 vsc --profile prod nsx tier1s get <tier1-id>
 
-# pyVmomi fallback (read-only) — perf counters the REST surface lacks
+# pyVmomi fallback (read-only) — perf/events/tasks the REST surface lacks
 vsc --profile prod vsphere perf vm vm-42 --metric cpu.usage --metric mem.usage
+vsc --profile prod vsphere events list --vm vm-42 --since 1h
+vsc --profile prod vsphere tasks list --max-count 20
 
 # Writes — preview first (dry-run), then --apply
 vsc --profile prod vsphere power stop vm-42                    # preview

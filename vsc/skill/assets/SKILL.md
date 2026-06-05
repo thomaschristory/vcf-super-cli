@@ -99,6 +99,7 @@ vsc --profile prod nsx tier1s get <tier1-id>
 vsc --profile prod vsphere perf vm vm-42 --metric cpu.usage --metric mem.usage
 vsc --profile prod vsphere events list --vm vm-42 --since 1h
 vsc --profile prod vsphere tasks list --max-count 20
+vsc --profile prod vsphere inventory vm vm-42 --props config.hardware
 
 # Writes — preview first (dry-run), then --apply
 vsc --profile prod vsphere power stop vm-42                    # preview

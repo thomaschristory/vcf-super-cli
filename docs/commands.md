@@ -30,7 +30,7 @@ Generated from `com.vmware.vcenter`:
 | `resource-pool` | `vsc vsphere resource-pool create --spec '<json>' --apply` |
 | `power` | `vsc vsphere power start\|stop\|reset\|suspend <vm> --apply` |
 | `cpu` / `memory` / `disk` / `ethernet` | VM hardware reads + writes, e.g. `vsc vsphere cpu update <vm> --spec '<json>' --apply` |
-| `perf` / `events` / `tasks` | **pyVmomi fallback** (read-only) — perf counters, recent events, and recent/running tasks the REST/vAPI surface lacks (see below) |
+| `perf` / `events` / `tasks` / `inventory` | **pyVmomi fallback** (read-only) — perf counters, recent events, recent/running tasks, and a property walk the REST/vAPI surface lacks (see below) |
 
 ### pyVmomi fallback commands
 
@@ -47,6 +47,10 @@ API. Those commands live under `vsc vsphere` alongside the generated ones, are
   `2h`/`1d`); scope to at most one entity.
 - `vsc vsphere tasks list [--max-count N]` — recent and running tasks via the
   TaskManager.
+- `vsc vsphere inventory vm <vm> [--props path]…` / `inventory host <host> …` —
+  managed-object properties the REST list ops omit (device tree, custom attributes),
+  via the PropertyCollector. `--props` is repeatable (e.g. `--props config.hardware`);
+  with none, a small per-type summary set is returned.
 
 ## `vsc nsx …` (NSX Policy)
 

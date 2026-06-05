@@ -80,7 +80,7 @@ def _option_for(sig: inspect.Signature, sig_name: str) -> object:
 
 def test_enum_option_gets_autocompletion() -> None:
     enum_param = Param(name="state", kind=ParamKind.ENUM, required=False, enum_values=["ON", "OFF"])
-    sig, _spec = _build_signature(_op_with(enum_param))
+    sig, _spec, _fp = _build_signature(_op_with(enum_param))
     opt = _option_for(sig, "state")
     assert opt.autocompletion is not None
     assert opt.autocompletion("O") == ["ON", "OFF"]
@@ -88,13 +88,13 @@ def test_enum_option_gets_autocompletion() -> None:
 
 def test_non_enum_option_has_no_autocompletion() -> None:
     string_param = Param(name="name", kind=ParamKind.STRING, required=False)
-    sig, _spec = _build_signature(_op_with(string_param))
+    sig, _spec, _fp = _build_signature(_op_with(string_param))
     assert _option_for(sig, "name").autocompletion is None
 
 
 def test_output_option_gets_format_completion() -> None:
     string_param = Param(name="name", kind=ParamKind.STRING, required=False)
-    sig, _spec = _build_signature(_op_with(string_param))
+    sig, _spec, _fp = _build_signature(_op_with(string_param))
     opt = _option_for(sig, _OUTPUT_PARAM)
     assert opt.autocompletion is not None
     assert opt.autocompletion("") == ["json", "table"]

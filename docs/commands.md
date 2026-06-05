@@ -55,10 +55,36 @@ Generated from `vcf.nsx.policy`:
 
 ## Filtering
 
-`list` accepts the SDK filter spec as JSON:
+`list` commands expose each field of the SDK filter spec as its own typed flag.
+List-valued fields are repeatable; enum fields validate their choices and
+tab-complete:
 
 ```sh
-vsc --profile prod vsphere vm list --filter '{"power_states": ["POWERED_ON"]}'
+vsc --profile prod vsphere vm list --power-states POWERED_ON --names web-1 --names web-2
 ```
 
-Per-field flags for filters are on the v0.3 roadmap.
+The raw JSON spec is still accepted as a base layer / escape hatch; per-field
+flags merge **over** it (a flag wins over the same key in the blob):
+
+```sh
+vsc --profile prod vsphere vm list --filter '{"clusters": ["domain-c1"]}' --power-states POWERED_ON
+```
+
+## Pagination
+
+`list` commands accept paging flags:
+
+| Flag | Effect |
+|------|--------|
+| `--all` | follow the cursor and return **every** page (paginated backends, e.g. NSX) |
+| `--max-items N` | cap the total number of items returned |
+| `--limit N` | client-side cap for non-paginated (vSphere) lists |
+
+```sh
+vsc --profile prod nsx segments list --all            # every page, concatenated
+vsc --profile prod nsx segments list --page-size 50   # one page (cursor surfaced for manual paging)
+vsc --profile prod vsphere vm list --limit 20         # first 20 only
+```
+
+Without `--all`, a paginated `list` returns one page and surfaces the `cursor` so
+an agent can drive pagination itself.

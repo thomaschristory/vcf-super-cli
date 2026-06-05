@@ -28,8 +28,7 @@ def flatten_filter(param: Param) -> list[Param]:
     """Return one child :class:`Param` per field of the filter struct."""
     struct_type = param.raw_type
     return [
-        param_from_type(name, struct_type.get_field(name))
-        for name in struct_type.get_field_names()
+        param_from_type(name, struct_type.get_field(name)) for name in struct_type.get_field_names()
     ]
 
 

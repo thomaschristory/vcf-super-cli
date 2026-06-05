@@ -61,6 +61,7 @@ class FilterPlan:
     sig_name: str
     fields: list[tuple[Param, str]]
 
+
 _ANNOTATIONS: dict[ParamKind, type] = {
     ParamKind.INTEGER: int,
     ParamKind.DOUBLE: float,
@@ -328,9 +329,7 @@ def _invoker(service: Any, op_id: str) -> Callable[..., Any]:
     return invoke
 
 
-def _apply_filter(
-    plan: FilterPlan, kwargs: dict[str, Any], sdk_kwargs: dict[str, Any]
-) -> None:
+def _apply_filter(plan: FilterPlan, kwargs: dict[str, Any], sdk_kwargs: dict[str, Any]) -> None:
     """Merge the raw ``--filter`` blob with per-field flags into the filter kwarg."""
     field_values = {child.name: kwargs.get(sig) for child, sig in plan.fields}
     filt = assemble_filter(kwargs.get(plan.sig_name), field_values, plan.param)

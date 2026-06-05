@@ -21,6 +21,11 @@ Completer = Callable[[str], list[str]]
 
 
 def _prefix(candidates: list[str], incomplete: str) -> list[str]:
+    # Typer may hand us an empty string (and, per its signature, possibly None);
+    # in that case every candidate is a match. Guarding here also keeps completion
+    # from raising mid-<TAB> on a falsy value.
+    if not incomplete:
+        return list(candidates)
     return [c for c in candidates if c.startswith(incomplete)]
 
 

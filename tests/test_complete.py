@@ -26,6 +26,12 @@ def test_enum_completer_no_match_returns_empty() -> None:
     assert enum_completer(["A", "B"])("Z") == []
 
 
+def test_enum_completer_none_incomplete_returns_all() -> None:
+    # Typer's wrapper types incomplete as ``str | None``; a None must not crash
+    # completion — treat it like an empty prefix.
+    assert enum_completer(["A", "B"])(None) == ["A", "B"]  # type: ignore[arg-type]
+
+
 def test_output_format_completer_offers_formats() -> None:
     assert output_format_completer()("") == ["json", "table"]
     assert output_format_completer()("t") == ["table"]

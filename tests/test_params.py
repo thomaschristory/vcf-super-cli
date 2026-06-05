@@ -8,7 +8,7 @@ import pytest
 from com.vmware.vcenter.vm_client import Power
 from vmware.vapi.bindings.struct import VapiStruct
 
-from vsc.gen.discover import discover_operations, vsphere_services
+from vsc.gen.discover import discover_operations, nsx_services, vsphere_services
 from vsc.gen.model import Param, ParamKind
 from vsc.gen.params import coerce_scalar, coerce_value, param_from_type
 
@@ -126,3 +126,42 @@ def test_map_with_integer_values() -> None:
         value_kind=ParamKind.INTEGER,
     )
     assert coerce_value(p, '{"a": "3"}') == {"a": 3}
+
+
+# --------------------------------------------------------------------------- #
+# v0.2: write-body struct coercion (the path that builds request bodies)
+# --------------------------------------------------------------------------- #
+
+
+def _write_param(service_name: str, verb: str, backend: str, param_name: str) -> Param:
+    services = vsphere_services() if backend == "vsphere" else nsx_services()
+    cls = next(c for c in services if c.__name__ == service_name)
+    op = next(o for o in discover_operations(cls, backend, read_only=False) if o.cli_verb == verb)
+    return next(p for p in op.params if p.name == param_name)
+
+
+def test_nsx_named_body_struct_roundtrip() -> None:
+    # NSX flags a single request_body_parameter; it coerces to its binding struct.
+    seg = _write_param("Segments", "set", "nsx", "segment")
+    assert seg.is_body and seg.kind is ParamKind.STRUCT and seg.struct_class is not None
+    built = coerce_value(seg, {"display_name": "web", "description": "d"})
+    assert isinstance(built, VapiStruct)
+    assert built.display_name == "web"
+    assert built.description == "d"
+
+
+def test_vsphere_spec_body_struct_roundtrip() -> None:
+    # vCenter has no flagged body param; the spec struct still coerces field-by-field.
+    spec = _write_param("VM", "create", "vsphere", "spec")
+    assert spec.kind is ParamKind.STRUCT and not spec.is_body
+    built = coerce_value(spec, {"name": "vm-1"})
+    assert isinstance(built, VapiStruct)
+    assert built.name == "vm-1"
+
+
+def test_nsx_body_from_json_string_roundtrip() -> None:
+    # The body arrives from the CLI as a JSON string; coercion parses then builds.
+    seg = _write_param("Segments", "set", "nsx", "segment")
+    built = coerce_value(seg, '{"display_name": "web"}')
+    assert isinstance(built, VapiStruct)
+    assert built.display_name == "web"

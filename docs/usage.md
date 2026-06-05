@@ -46,7 +46,10 @@ Branch on `code`/`kind`, never on `message` text.
 | 7 | CONFLICT | Already exists / in use / wrong state / concurrent change |
 | 8 | UNAVAILABLE | Target busy, timed out, or temporarily unavailable |
 
-## Read-only in v0.1
+## Writes are dry-run by default
 
-v0.1 exposes only read (`GET`) operations. Write verbs arrive in v0.2 and will be
-**dry-run by default**, requiring `--apply`.
+Write commands (`create`, `delete`, `set`, `patch`, power actions, …) **preview the
+request and change nothing unless `--apply` is passed** — a dry-run never opens a
+connection. See [Writes](writes.md) for the full model and the request/response
+envelope. Write failures use the same error envelope and exit codes above (notably
+`7` CONFLICT and `8` UNAVAILABLE).

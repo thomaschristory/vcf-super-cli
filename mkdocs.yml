@@ -39,5 +39,6 @@ nav:
   - Install: install.md
   - Profiles: profiles.md
   - Commands: commands.md
+  - Writes: writes.md
   - Output & errors: usage.md
   - Design: design.md

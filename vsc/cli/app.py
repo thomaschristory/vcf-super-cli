@@ -31,8 +31,18 @@ def _build_app() -> typer.Typer:
         add_completion=True,
     )
 
-    vsphere_ops = [op for cls in vsphere_services() for op in discover_operations(cls, "vsphere")]
-    nsx_ops = [op for cls in nsx_services() for op in discover_operations(cls, "nsx")]
+    # Writes are discoverable (discover_operations defaults to read_only=False) but
+    # are NOT mounted in the live app until #21 adds the dry-run/--apply safety gate,
+    # so every state of main keeps the read-only safety contract. The expanded v0.2
+    # catalog still contributes its read commands here.
+    vsphere_ops = [
+        op
+        for cls in vsphere_services()
+        for op in discover_operations(cls, "vsphere", read_only=True)
+    ]
+    nsx_ops = [
+        op for cls in nsx_services() for op in discover_operations(cls, "nsx", read_only=True)
+    ]
 
     app.add_typer(
         build_group(vsphere_ops, connect_for_backend),

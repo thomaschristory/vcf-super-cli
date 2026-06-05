@@ -6,19 +6,19 @@ vAPI bindings.
 
 ```console
 $ vsc vsphere vm list --profile prod
-$ vsc nsx segment list --output table
+$ vsc nsx segments list --output table
 ```
 
 !!! warning "Alpha / pre-release"
-    v0.1 is **read-only** (vSphere + NSX inventory). Writes arrive in v0.2 —
-    dry-run by default, nothing changes without `--apply`.
+    Reads (vSphere + NSX inventory) and writes are both available. **Writes are
+    dry-run by default** — nothing changes without `--apply`. See [Writes](writes.md).
 
 ## Highlights
 
 - **Mirrors the real API** — commands come from the SDK's vAPI metadata, covering
   vCenter and NSX from one generator.
 - **REST-first** via `vmware-vcenter`, `pyVmomi` fallback where needed.
-- **Safe by default** — read-only now; future writes are dry-run unless `--apply`.
+- **Safe by default** — writes are dry-run unless `--apply`; a dry-run never connects.
 - **Agent-friendly** — JSON output, stable error envelope, documented exit codes,
   bundled agent Skill.
 

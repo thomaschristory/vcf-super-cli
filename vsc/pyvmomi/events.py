@@ -20,6 +20,9 @@ from vsc.pyvmomi.runner import run_read
 events_app = typer.Typer(no_args_is_help=True, help="Recent events (pyVmomi fallback).")
 
 _UNIT_SECONDS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+# ~100 years; far more history than any event store holds, and larger values
+# overflow the datetime arithmetic in query_events.
+_MAX_SINCE_SECONDS = 100 * 366 * 86400
 
 
 def parse_since(text: str) -> int:
@@ -27,7 +30,10 @@ def parse_since(text: str) -> int:
     unit = text[-1:]
     if unit not in _UNIT_SECONDS or not text[:-1].isdigit():
         raise ValueError(f"invalid duration {text!r} (use e.g. 30s, 15m, 2h, 1d)")
-    return int(text[:-1]) * _UNIT_SECONDS[unit]
+    seconds = int(text[:-1]) * _UNIT_SECONDS[unit]
+    if seconds > _MAX_SINCE_SECONDS:
+        raise ValueError(f"duration {text!r} too large (max ~100y)")
+    return seconds
 
 
 def query_events(
@@ -69,14 +75,13 @@ def events_list(
     ),
 ) -> None:
     """List recent events, optionally scoped to one VM or host."""
-    if vm and host:
-        raise typer.BadParameter("pass at most one of --vm / --host")
-    try:
-        since_seconds = parse_since(since) if since else None
-    except ValueError as exc:
-        raise typer.BadParameter(str(exc)) from exc
 
     def build(si: Any) -> list[dict[str, Any]]:
+        # Validate inside build so usage errors flow through run_read as the
+        # structured JSON envelope (exit 2), matching `perf`'s metric check.
+        if vm and host:
+            raise ValueError("pass at most one of --vm / --host")
+        since_seconds = parse_since(since) if since else None
         entity = None
         if vm:
             entity = vim.VirtualMachine(vm, si._stub)

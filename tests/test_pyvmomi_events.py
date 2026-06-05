@@ -63,6 +63,12 @@ def test_parse_since_rejects_garbage() -> None:
         parse_since("soon")
 
 
+def test_parse_since_rejects_overflowing_value() -> None:
+    # A huge but digit-valid duration must be rejected, not overflow datetime math.
+    with pytest.raises(ValueError, match="too large"):
+        parse_since("99999999999d")
+
+
 # --------------------------------------------------------------------------- #
 # query_events
 # --------------------------------------------------------------------------- #
@@ -105,11 +111,23 @@ def test_events_list_cli(monkeypatch: pytest.MonkeyPatch) -> None:
     assert em.captured.entity.entity._moId == "vm-1"
 
 
+def test_events_list_cli_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    em = _FakeEM([_event(1, "host event")])
+    now = _dt.datetime(2026, 6, 5, 12, 0, tzinfo=_dt.UTC)
+    monkeypatch.setattr("vsc.pyvmomi.runner.connect_vmomi", lambda: _fake_si(em, now))
+    result = runner.invoke(_app(), ["events", "list", "--host", "host-12"])
+    assert result.exit_code == 0, result.stdout
+    assert isinstance(em.captured.entity.entity, vim.HostSystem)
+    assert em.captured.entity.entity._moId == "host-12"
+
+
 def test_events_list_rejects_two_entities(monkeypatch: pytest.MonkeyPatch) -> None:
     em = _FakeEM([])
     monkeypatch.setattr("vsc.pyvmomi.runner.connect_vmomi", lambda: _fake_si(em))
     result = runner.invoke(_app(), ["events", "list", "--vm", "vm-1", "--host", "host-2"])
     assert result.exit_code == 2  # only one entity filter allowed
+    # On-contract: structured JSON envelope on stderr (matches perf / generated cmds).
+    assert json.loads(result.stderr)["error"]["code"] == 2
 
 
 def test_events_list_bad_since_is_usage_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -117,3 +135,4 @@ def test_events_list_bad_since_is_usage_error(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr("vsc.pyvmomi.runner.connect_vmomi", lambda: _fake_si(em))
     result = runner.invoke(_app(), ["events", "list", "--since", "soon"])
     assert result.exit_code == 2
+    assert json.loads(result.stderr)["error"]["code"] == 2

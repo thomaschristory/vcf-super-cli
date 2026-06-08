@@ -93,6 +93,13 @@ def test_garbage_guest_address_does_not_crash() -> None:
     assert matches(props, Criteria(ip=("10.20.3.41",)))
 
 
+def test_ip_family_mismatch_is_no_match_not_crash() -> None:
+    # An IPv6 pattern against an IPv4-only guest must simply not match — the
+    # stdlib membership test short-circuits on version, so no exception leaks.
+    assert not matches(_props(primary_ip="10.20.3.41"), Criteria(ip=("2001:db8::1",)))
+    assert not matches(_props(primary_ip="10.20.3.41"), Criteria(ip=("2001:db8::/32",)))
+
+
 # --------------------------------------------------------------------------- #
 # matcher — text / mac / power
 # --------------------------------------------------------------------------- #

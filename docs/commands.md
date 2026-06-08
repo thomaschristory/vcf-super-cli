@@ -51,6 +51,17 @@ API. Those commands live under `vsc vsphere` alongside the generated ones, are
   managed-object properties the REST list ops omit (device tree, custom attributes),
   via the PropertyCollector. `--props` is repeatable (e.g. `--props config.hardware`);
   with none, a small per-type summary set is returned.
+- `vsc vsphere inventory find [--ip …] [--name …] [--hostname …] [--mac …] [--guest-os …] [--power-state …] [--props …]`
+  — **find VMs by guest/runtime attribute without knowing the moid.** This is the
+  answer to *"which VM has `10.20.3.41`?"*: guest networking isn't in the REST
+  `vm list` filter, so this sweeps every VM's `guest.*` properties in one round-trip.
+  `--ip` accepts an exact address or a CIDR (`10.20.3.0/24`, IPv4 or IPv6) and matches
+  across the primary and every NIC address; `--name`/`--hostname`/`--guest-os` are
+  case-insensitive substring or glob; `--mac` is exact; `--power-state` is one of
+  `poweredOn`/`poweredOff`/`suspended`. Flags **AND** together, a repeated flag **ORs**
+  within its field, and at least one match flag is required. `--props` (repeatable)
+  widens each hit's output only — it never affects matching. Powered-off VMs and those
+  without VMware Tools report no guest IP and won't match `--ip`.
 
 ## `vsc nsx …` (NSX Policy)
 

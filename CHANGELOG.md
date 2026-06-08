@@ -7,6 +7,25 @@ versions may include breaking changes.
 
 ## [Unreleased]
 
+## v0.5.0 — 2026-06-08
+
+Find VMs by attribute. Answers the everyday *"which VM has `10.20.3.41`?"* — a
+reverse lookup the REST `vm list` filter can't do, because guest networking lives
+only on the pyVmomi `guest.*` properties.
+
+### Added
+
+- **`vsc vsphere inventory find`** (#54) — locate VMs by guest/runtime attribute
+  without knowing the moid: `--ip` (exact or CIDR, IPv4/IPv6, across the primary and
+  every NIC address), `--name`, `--hostname`, `--guest-os` (case-insensitive
+  substring or glob), `--mac` (exact), and `--power-state`. Flags **AND** together; a
+  repeated flag **ORs** within its field; at least one match flag is required (it
+  refuses to dump the whole inventory). `--props` (repeatable) widens each hit's
+  output only — never a match criterion. One PropertyCollector round-trip over a
+  container view (always destroyed); a pure, pyVmomi-free matcher does the filtering.
+  Reads only — no `--apply` — and emits the same JSON / error envelope / exit codes
+  as the other pyVmomi fallback commands.
+
 ## v0.4.0 — 2026-06-08
 
 Live resource-id completion. Pressing `<TAB>` on an id-typed argument can now

@@ -103,6 +103,12 @@ vsc --profile prod vsphere events list --vm vm-42 --since 1h
 vsc --profile prod vsphere tasks list --max-count 20
 vsc --profile prod vsphere inventory vm vm-42 --props config.hardware
 
+# Find a VM by IP/hostname/MAC/guest-OS/power when you don't know its moid.
+# Flags AND together; repeat a flag to OR; --ip takes an exact address or a CIDR.
+vsc --profile prod vsphere inventory find --ip 10.20.3.41          # "which VM has this IP?"
+vsc --profile prod vsphere inventory find --ip 10.20.3.0/24 --power-state poweredOn
+vsc --profile prod vsphere inventory find --name 'web-*' --props config.version
+
 # Writes — preview first (dry-run), then --apply
 vsc --profile prod vsphere power stop vm-42                    # preview
 vsc --profile prod vsphere power stop vm-42 --apply            # execute

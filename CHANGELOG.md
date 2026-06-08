@@ -7,6 +7,35 @@ versions may include breaking changes.
 
 ## [Unreleased]
 
+## v0.4.0 — 2026-06-08
+
+Live resource-id completion. Pressing `<TAB>` on an id-typed argument can now
+suggest **real ids** from the live inventory — strictly opt-in, cached, and
+fail-soft. The agent-facing contract is unchanged: stable JSON, error envelope,
+exit codes, dry-run-by-default writes, and `--help` stays fully offline.
+
+### Added
+
+- **Live resource-id completion** (#44), opt-in via `VSC_COMPLETE_DYNAMIC=1` and
+  off by default. When enabled, `<TAB>` on an id arg/option suggests live ids for
+  the resource type (VMs, hosts, clusters, datacenters, datastores, resource
+  pools), with each resource's name shown as completion help. Built on:
+  - a resource-type → list-op **registry** derived purely by introspecting the
+    SDK metadata (#45), no network;
+  - a **TTL cache** under the platform cache dir, keyed by
+    profile/backend/resource-type (default 60s, `VSC_COMPLETE_TTL` override) (#46);
+  - a **dynamic completer** whose fetch is time-bounded (`VSC_COMPLETE_TIMEOUT`,
+    default 2s) and blanket fail-soft — any error, missing auth, or timeout
+    yields no suggestions and is never cached (#47).
+- Static/offline completion (enums, output formats, profiles, filter enums) is
+  unchanged and remains the default. `--help` and command execution never open a
+  connection for completion.
+
+### Notes
+
+- Live completion is a human convenience only; agents should keep using `list`
+  to discover ids and must not depend on completion for correctness (#48).
+
 ## v0.3.0 — 2026-06-05
 
 Ergonomics: friendlier filtering and paging, offline shell completion, and a

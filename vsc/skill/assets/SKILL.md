@@ -61,9 +61,11 @@ Write failures use the same error envelope + exit codes — notably `7` CONFLICT
 - **Exit codes** are stable — branch on these, not on message text:
   `0` ok · `1` generic · `2` usage · `3` auth · `4` not-found · `5` connection ·
   `6` config · `7` conflict · `8` unavailable.
-- **Shell completion is offline.** `vsc --install-completion` sets it up; it
-  suggests enum choices, output formats, profile names, and `list` filter enum
-  values. It never completes live resource ids (that would need a network call).
+- **Shell completion is offline by default.** `vsc --install-completion` sets it
+  up; it suggests enum choices, output formats, profile names, and `list` filter
+  enum values. Live resource-id completion is **opt-in** (`VSC_COMPLETE_DYNAMIC=1`),
+  cached, time-bounded, and fail-soft — a convenience for humans only. Do **not**
+  rely on it for correctness: use `list` to discover ids.
 - **Filtering `list`** — each filter field is its own flag (repeatable for lists),
   e.g. `--power-states POWERED_ON --names web-1`. The raw `--filter '<json>'` blob
   still works as a base; per-field flags override it.

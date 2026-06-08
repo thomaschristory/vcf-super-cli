@@ -30,8 +30,35 @@ Completion is **fully offline** — it never opens a connection. It suggests:
 - configured profile names (`--profile <TAB>`),
 - and per-field `list` filter enum choices.
 
-Completing a live resource id (e.g. `<vm>` from a real inventory) would require a
-network call and is deliberately **not** done in this release.
+### Live resource-id completion (opt-in)
+
+Completing a real id (e.g. `<vm>` from the live inventory) does require a network
+call, so it is **opt-in** and off by default:
+
+```sh
+export VSC_COMPLETE_DYNAMIC=1
+vsc vsphere vm get <TAB>          # → vm-101  vm-102 …  (real ids, names as help)
+```
+
+When enabled, pressing `<TAB>` on an id-typed argument or option suggests live
+ids for that resource type (VMs, hosts, clusters, datacenters, datastores,
+resource pools), showing each resource's name as completion help.
+
+It is built to never get in your way:
+
+- **Off by default.** Without `VSC_COMPLETE_DYNAMIC`, `<TAB>` stays fully offline
+  (the suggestions above are all you get).
+- **Cached.** Results are cached per profile/backend/resource-type under the
+  platform cache dir with a short TTL (default 60s; override with
+  `VSC_COMPLETE_TTL=<seconds>`), so repeated presses don't re-hit the API.
+- **Bounded and fail-soft.** The fetch is abandoned after a short timeout
+  (`VSC_COMPLETE_TIMEOUT`, default 2s); any error, missing auth, or timeout
+  yields no suggestions — `<TAB>` never hangs or prints a traceback.
+- **`--help` is always offline.** Only the shell-completion subprocess ever
+  fetches; `--help` and command execution are unaffected.
+
+This is a convenience only. The agent contract is unchanged: don't rely on
+completion for correctness — list commands remain the source of truth for ids.
 
 ## Error envelope
 

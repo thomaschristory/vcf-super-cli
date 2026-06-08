@@ -20,6 +20,7 @@ from vmware.vapi.exception import CoreException
 from vsc.config.store import ConfigError
 from vsc.connect.targets import TargetNotConfigured
 from vsc.gen.complete import enum_completer, output_format_completer
+from vsc.gen.complete_dynamic import resource_completer
 from vsc.gen.filters import assemble_filter, flatten_filter, is_filter_param
 from vsc.gen.model import Operation, Param, ParamKind
 from vsc.gen.paginate import follow_cursor
@@ -97,8 +98,18 @@ def _sig_name(param: Param, used: set[str]) -> str:
     return name
 
 
-def _autocompletion_for(param: Param) -> Callable[[str], list[str]] | None:
-    """Offline completer for an option: enum choices, or a list-of-enum's choices."""
+# Either a static (offline) completer returning bare strings, or the dynamic
+# resource completer returning (id, help) pairs. Typer accepts both shapes.
+Autocompleter = Callable[[str], list[str]] | Callable[[str], list[tuple[str, str]]]
+
+
+def _autocompletion_for(param: Param) -> Autocompleter | None:
+    """Completer for a param: enum choices, a list-of-enum's choices, or live ids.
+
+    ID-kind params get the dynamic resource completer (opt-in via
+    ``VSC_COMPLETE_DYNAMIC``); it is inert and offline unless that is set, so
+    attaching it never affects ``--help`` or default ``<TAB>`` behaviour.
+    """
     if param.kind is ParamKind.ENUM and param.enum_values:
         return enum_completer(param.enum_values)
     element = param.element
@@ -109,6 +120,8 @@ def _autocompletion_for(param: Param) -> Callable[[str], list[str]] | None:
         and element.enum_values
     ):
         return enum_completer(element.enum_values)
+    if param.kind is ParamKind.ID and param.resource_types:
+        return resource_completer(param.resource_types)
     return None
 
 
@@ -166,7 +179,11 @@ def _build_signature(
         sig_name = _sig_name(param, used)
         default: Any
         if param.in_path:
-            default = typer.Argument(... if param.required else None, help=_help_text(param))
+            default = typer.Argument(
+                ... if param.required else None,
+                help=_help_text(param),
+                autocompletion=_autocompletion_for(param),
+            )
             parameters.append(
                 inspect.Parameter(
                     sig_name,

@@ -15,6 +15,7 @@ from pyVmomi import vim, vmodl
 from vsc.connect.vmomi import vmomi_jsonable
 from vsc.gen.complete import output_format_completer
 from vsc.output.render import OutputFormat
+from vsc.pyvmomi.find import Criteria, find_matches, validate_criteria
 from vsc.pyvmomi.runner import run_read
 
 inventory_app = typer.Typer(no_args_is_help=True, help="Property walk (pyVmomi fallback).")
@@ -89,3 +90,62 @@ def inventory_host(
 ) -> None:
     """Retrieve properties of an ESXi host."""
     _run(host, "host", props or _DEFAULT_PROPS["host"], output.value)
+
+
+_FIND_PROPS_HELP = "Extra property to surface per hit (repeatable). Output only — never matches."
+
+
+@inventory_app.command("find")
+def inventory_find(
+    ip: list[str] = typer.Option(
+        None, "--ip", help="Guest IP, exact or CIDR (e.g. 10.20.3.41 or 10.20.3.0/24). Repeatable."
+    ),
+    name: list[str] = typer.Option(
+        None, "--name", help="VM name, substring or glob (case-insensitive). Repeatable."
+    ),
+    hostname: list[str] = typer.Option(
+        None, "--hostname", help="Guest hostname, substring or glob. Repeatable."
+    ),
+    mac: list[str] = typer.Option(
+        None, "--mac", help="NIC MAC address, exact (case-insensitive). Repeatable."
+    ),
+    guest_os: list[str] = typer.Option(
+        None, "--guest-os", help="Guest OS name, substring or glob. Repeatable."
+    ),
+    power_state: list[str] = typer.Option(
+        None, "--power-state", help="poweredOn | poweredOff | suspended. Repeatable."
+    ),
+    props: list[str] = typer.Option(None, "--props", help=_FIND_PROPS_HELP),
+    output: OutputFormat = typer.Option(
+        OutputFormat.json,
+        "--output",
+        "-o",
+        help="Output format.",
+        autocompletion=output_format_completer(),
+    ),
+) -> None:
+    """Find VMs by guest/runtime attribute, without knowing the moid.
+
+    Flags AND together; repeat a flag to OR within that field. At least one match
+    flag is required (--props/-o alone do not count). Powered-off VMs and those
+    without VMware Tools report no guest IP and won't match --ip.
+    """
+
+    def build(si: Any) -> list[dict[str, Any]]:
+        criteria = Criteria(
+            ip=tuple(ip or ()),
+            name=tuple(name or ()),
+            hostname=tuple(hostname or ()),
+            mac=tuple(mac or ()),
+            guest_os=tuple(guest_os or ()),
+            power_state=tuple(power_state or ()),
+        )
+        if criteria.is_empty:
+            raise ValueError(
+                "give at least one match flag "
+                "(--ip/--name/--hostname/--mac/--guest-os/--power-state)"
+            )
+        validate_criteria(criteria)
+        return find_matches(si, criteria, props or [])
+
+    run_read(output.value, build)

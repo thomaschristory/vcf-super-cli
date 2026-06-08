@@ -68,8 +68,11 @@ SOAP API. Those are **hand-written read-only commands** mounted under
   and exit codes (`vsc/pyvmomi/runner.py`).
 
 Commands: `perf` (PerformanceManager counters), `events` / `tasks`
-(Event/Task managers), and `inventory` (a PropertyCollector property walk). All
-are reads — no `--apply`.
+(Event/Task managers), and `inventory` — a PropertyCollector property walk
+(`inventory vm`/`host`) plus `inventory find`, which sweeps every VM's `guest.*`
+properties in one round-trip to locate a VM by IP / name / hostname / MAC / guest
+OS / power state (the fields the REST `vm list` filter can't reach). All are
+reads — no `--apply`.
 
 ## Design specs
 
@@ -78,6 +81,7 @@ The authoritative, milestone-by-milestone designs live in the repository:
 - [v0.1 — dynamic read-only CLI](https://github.com/thomaschristory/vcf-super-cli/blob/main/docs/superpowers/specs/2026-06-05-vcf-super-cli-design.md)
 - [v0.2 — writes](https://github.com/thomaschristory/vcf-super-cli/blob/main/docs/superpowers/specs/2026-06-05-vcf-super-cli-v0.2-writes-design.md)
 - [v0.3 — ergonomics](https://github.com/thomaschristory/vcf-super-cli/blob/main/docs/superpowers/specs/2026-06-05-vcf-super-cli-v0.3-ergonomics-design.md)
+- [v0.5 — find VMs by attribute](https://github.com/thomaschristory/vcf-super-cli/blob/main/docs/superpowers/specs/2026-06-08-vcf-super-cli-v0.5-find-vms-design.md)
 
 ## Contracts
 

@@ -24,7 +24,8 @@ $ vsc vsphere perf vm vm-42 --metric cpu.usage
   per-field `--<field>` filter flags, and paging (`--all` / `--max-items` /
   `--limit`).
 - **pyVmomi fallback** — read-only `perf`, `events`, `tasks`, and `inventory`
-  commands for areas the REST/vAPI surface doesn't cover.
+  commands for areas the REST/vAPI surface doesn't cover, including
+  `inventory find` to locate a VM by IP / hostname / MAC / guest OS.
 - **Safe by default** — writes are dry-run unless `--apply`; a dry-run never connects.
 - **Agent-friendly** — JSON output, stable error envelope, documented exit codes,
   bundled agent Skill.

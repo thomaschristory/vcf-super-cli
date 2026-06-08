@@ -19,9 +19,10 @@ $ vsc vsphere perf vm vm-42 --metric cpu.usage
 
 - **Mirrors the real API** — commands come from the SDK's vAPI metadata, covering
   vCenter and NSX from one generator.
-- **Ergonomic** — offline tab-completion (enums, formats, profiles, filter
-  choices), per-field `--<field>` filter flags, and paging (`--all` /
-  `--max-items` / `--limit`).
+- **Ergonomic** — tab-completion (enums, formats, profiles, filter choices, and
+  opt-in [live resource ids](usage.md#live-resource-id-completion-opt-in)),
+  per-field `--<field>` filter flags, and paging (`--all` / `--max-items` /
+  `--limit`).
 - **pyVmomi fallback** — read-only `perf`, `events`, `tasks`, and `inventory`
   commands for areas the REST/vAPI surface doesn't cover.
 - **Safe by default** — writes are dry-run unless `--apply`; a dry-run never connects.

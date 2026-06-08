@@ -56,6 +56,10 @@ VSC_PROFILE=prod vsc nsx segments list
 | `VSC_VSPHERE_INSECURE` / `VSC_NSX_INSECURE` | `1`/`true` to skip TLS verification (lab/self-signed) |
 | `VSC_CONFIG_FILE` | Override the config file location |
 | `VSC_LOG_LEVEL` | Log level on stderr (default `WARNING`) |
+| `VSC_COMPLETE_DYNAMIC` | `1`/`true` to enable [live resource-id completion](usage.md#live-resource-id-completion-opt-in) (off by default) |
+| `VSC_COMPLETE_TTL` | Live-completion cache TTL in seconds (default `60`) |
+| `VSC_COMPLETE_TIMEOUT` | Hard timeout for a live-completion fetch in seconds (default `2`) |
+| `VSC_CACHE_DIR` | Override the cache directory (where live-completion results are cached) |
 
 !!! warning "TLS"
     Verification is **on by default**. Only set `VSC_*_INSECURE` (or

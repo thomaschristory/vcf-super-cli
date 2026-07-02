@@ -44,6 +44,7 @@ $ vsc vsphere power stop vm-42 --apply        # writes are dry-run without --app
 | Ergonomics — offline shell completion, per-field filter flags + paging, pyVmomi fallback (`perf`/`events`/`tasks`/`inventory`) | ✅ v0.3 |
 | Live resource-id completion | ✅ v0.4 |
 | Find VMs by attribute — IP / hostname / MAC / guest OS / power (`vsc vsphere inventory find`) | ✅ v0.5 |
+| NSX **Traceflow** — inject a synthetic packet, read its path (`vsc nsx traceflows` / `vsc nsx observations`) | ✅ v0.6 |
 | NSX Manager / Global-Manager, SDDC Manager, Operations, LCM | deferred |
 
 ## Install

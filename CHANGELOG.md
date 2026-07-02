@@ -7,6 +7,17 @@ versions may include breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- **`vsc nsx traceflows` / `vsc nsx observations`** (#58) — NSX Policy Traceflow.
+  Inject a synthetic packet and read the exact path it takes through the topology —
+  the first tool for "why can't A reach B?". `traceflows` exposes the config surface
+  (`list`/`get`/`set`/`patch`/`delete` + the `policy-lm-restart-traceflow` action);
+  `set <id> --traceflow-config '<json>'` starts a trace (dry-run by default, `--apply`
+  to execute). `observations list --traceflow-id <id>` returns the traced path.
+  Pure allow-list addition — no generator changes; writes, JSON struct bodies and
+  paging come from the existing machinery. Manager API traceflow stays deferred.
+
 ## v0.5.0 — 2026-06-08
 
 Find VMs by attribute. Answers the everyday *"which VM has `10.20.3.41`?"* — a

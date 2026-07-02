@@ -78,6 +78,8 @@ Generated from `vcf.nsx.policy`:
 | `ip-pools` | `vsc nsx ip-pools set <id> --ip-address-pool '<json>' --apply` |
 | `dhcp-server-configs` / `dhcp-relay-configs` | DHCP config reads + writes |
 | `locale-services` | Tier-1 locale services reads + writes |
+| `traceflows` | `vsc nsx traceflows set <id> --traceflow-config '<json>' --apply` (start a trace), `vsc nsx traceflows list` |
+| `observations` | `vsc nsx observations list --traceflow-id <id>` (the traced packet path) |
 
 ## Curated commands
 

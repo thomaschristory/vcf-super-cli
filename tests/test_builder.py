@@ -259,6 +259,26 @@ def test_write_apply_routes_named_body_op() -> None:
     assert "segment" in _CAPTURED  # body struct routed to the SDK method
 
 
+def test_traceflows_set_dry_run_emits_put_body_and_never_connects() -> None:
+    # #58: the new NSX Traceflow write surface must inherit the dry-run gate —
+    # preview a PUT with the traceflow-config body, opening no connection.
+    calls: list[str] = []
+
+    def connect(backend: str) -> object:
+        calls.append(backend)
+        return object()
+
+    op = _write("Traceflows", "set", "nsx")
+    app = _write_app(op, object, connect)
+    result = runner.invoke(app, ["tf-1", "--traceflow-config", '{"display_name": "tf-web"}'])
+    assert result.exit_code == 0, result.stdout
+    env = json.loads(result.stdout)
+    assert env["applied"] is False
+    assert env["request"]["method"] == "PUT"
+    assert env["request"]["body"] == {"display_name": "tf-web"}
+    assert calls == []  # invariant: dry-run opens no connection
+
+
 def _synthetic_write_with_param(param_name: str) -> Operation:
     return Operation(
         backend="vsphere",

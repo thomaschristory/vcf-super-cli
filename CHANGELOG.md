@@ -7,6 +7,11 @@ versions may include breaking changes.
 
 ## [Unreleased]
 
+## v0.6.0 — 2026-07-03
+
+NSX Traceflow — inject a synthetic packet and read the exact path it takes through
+the topology, the first tool for "why can't A reach B?".
+
 ### Added
 
 - **`vsc nsx traceflows` / `vsc nsx observations`** (#58) — NSX Policy Traceflow.
@@ -17,6 +22,14 @@ versions may include breaking changes.
   to execute). `observations list <traceflow-id>` returns the traced path.
   Pure allow-list addition — no generator changes; writes, JSON struct bodies and
   paging come from the existing machinery. Manager API traceflow stays deferred.
+
+### Fixed
+
+- `list --all` no longer crashes on operations that return a cursor-shaped result
+  but take no `cursor` input parameter (e.g. `nsx observations list`). Cursor
+  following is now guarded by whether the op actually accepts a `cursor`; for those
+  that don't, `--all` degrades to a safe single-page no-op instead of re-invoking
+  with a rejected `cursor` kwarg.
 
 ## v0.5.0 — 2026-06-08
 

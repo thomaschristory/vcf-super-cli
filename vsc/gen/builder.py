@@ -295,6 +295,7 @@ def make_command(op: Operation, connect_fn: ConnectFn) -> Callable[..., None]:
                     all_flag=bool(kwargs.get(_ALL_PARAM, False)),
                     max_items=kwargs.get(_MAXITEMS_PARAM),
                     limit=kwargs.get(_LIMIT_PARAM),
+                    supports_cursor=any(p.name == "cursor" for p in op.params),
                 )
                 emit(result, fmt)
             elif op.is_write:
@@ -366,16 +367,22 @@ def _run_list(
     all_flag: bool,
     max_items: int | None,
     limit: int | None,
+    supports_cursor: bool = True,
 ) -> Any:
     """Execute a list operation, applying ``--all`` / ``--max-items`` / ``--limit``.
 
     Without any paging flag the raw result is returned unchanged (preserving the
     cursor for manual paging). ``--all`` follows the cursor across pages; the caps
     slice the returned items client-side.
+
+    ``supports_cursor`` guards cursor-following: a few ops (e.g. NSX traceflow
+    observations) return a cursor-shaped result yet take no ``cursor`` *input*, so
+    re-invoking with a cursor would raise. For those ``--all`` degrades to a safe
+    single-page no-op, mirroring how it already no-ops on plain (vSphere) lists.
     """
     first = invoke(**sdk_kwargs)
     if _is_cursor_list(first):
-        if all_flag:
+        if all_flag and supports_cursor:
             # Seed the loop with the page we already fetched (no double-fetch).
             def fetch_page(cursor: str | None) -> tuple[list[Any], str | None]:
                 res = first if cursor is None else invoke(**{**sdk_kwargs, "cursor": cursor})

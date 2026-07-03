@@ -181,6 +181,8 @@ def test_traceflows_expose_crud_verbs() -> None:
     assert by_verb["set"].http_method == "PUT"
     assert by_verb["patch"].http_method == "PATCH"
     assert by_verb["delete"].http_method == "DELETE"
+    # The restart action is a POST with no ?action=, so it keeps its kebab op id.
+    assert by_verb["policy-lm-restart-traceflow"].http_method == "POST"
 
 
 def test_traceflows_set_body_is_required_struct() -> None:
@@ -193,9 +195,10 @@ def test_traceflows_set_body_is_required_struct() -> None:
 
 def test_observations_list_has_required_traceflow_id_path_param() -> None:
     obs = next(c for c in nsx_services() if c.__name__ == "Observations")
-    list_op = next(o for o in discover_operations(obs, "nsx") if o.cli_verb == "list")
-    tid = next(p for p in list_op.params if p.name == "traceflow_id")
-    assert tid.in_path
+    ops = discover_operations(obs, "nsx")
+    assert [o.cli_verb for o in ops] == ["list"]  # single read op, verb is 'list'
+    tid = next(p for p in ops[0].params if p.name == "traceflow_id")
+    assert tid.in_path  # -> positional CLI argument, not a --traceflow-id option
     assert tid.required
 
 

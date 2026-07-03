@@ -41,7 +41,7 @@ Two Policy services (Manager API stays deferred, out of scope):
 
 | Verb | HTTP | Notes |
 |---|---|---|
-| `list --traceflow-id <id>` | GET | the traced packet path (the actual result); paged |
+| `list <traceflow-id>` | GET | the traced packet path (the actual result) |
 
 ## Behavior (inherited from existing infra — no new code)
 
@@ -49,8 +49,10 @@ Two Policy services (Manager API stays deferred, out of scope):
   and open no connection; `--apply` executes.
 - **`--traceflow-config` is a STRUCT** → accepts a JSON blob, validated client-side
   before any connection. Malformed/incomplete JSON → clean usage error (exit 2).
-- **Paging.** `traceflows list` and `observations list` get `--all` / `--max-items`
-  / `--limit`.
+- **Paging.** `traceflows list` is cursor-paginated (`--all` / `--max-items` /
+  `--limit`). `observations list` returns a cursor-shaped result but takes no
+  `cursor` *input*, so `--all` degrades to a safe single-page no-op (see the
+  generator guard added in review below) rather than re-invoking with a cursor.
 - **Read contract holds.** Under `read_only=True` both services yield only `get`/`list`
   GETs, preserving the invariant asserted by `test_expanded_catalog_read_contract_holds`.
 
@@ -90,3 +92,16 @@ emits a dry-run request plan and opens no connection.
 
 - Manager API traceflow (`vcf.nsx.api.v1`).
 - Group-nesting / verb-renaming ergonomics (separate issue if wanted).
+
+## Review follow-ups (adversarial pass)
+
+- **Critical (fixed):** `observations list --all` crashed — the op returns a
+  cursor-shaped result but takes no `cursor` input, so `follow_cursor` re-invoked
+  with `cursor=…` and the SDK method raised `TypeError`. Fixed generically in
+  `_run_list` via a `supports_cursor` guard (only follow when the op has a `cursor`
+  input param); `--all` now no-ops for such ops, matching plain-list behaviour.
+- **Docs (fixed):** `observations list`'s `traceflow_id` is a path variable →
+  positional argument (`list <traceflow-id>`), not a `--traceflow-id` option.
+- **Coverage (added):** restart verb asserted in discovery (POST) and its dry-run
+  gate covered at builder level; explicit `cli_verb == "list"` assertion for
+  observations; regression test for the `--all` no-op.

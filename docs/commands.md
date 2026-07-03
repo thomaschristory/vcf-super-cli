@@ -79,7 +79,7 @@ Generated from `vcf.nsx.policy`:
 | `dhcp-server-configs` / `dhcp-relay-configs` | DHCP config reads + writes |
 | `locale-services` | Tier-1 locale services reads + writes |
 | `traceflows` | `vsc nsx traceflows set <id> --traceflow-config '<json>' --apply` (start a trace), `vsc nsx traceflows list` |
-| `observations` | `vsc nsx observations list --traceflow-id <id>` (the traced packet path) |
+| `observations` | `vsc nsx observations list <traceflow-id>` (the traced packet path) |
 
 ## Curated commands
 

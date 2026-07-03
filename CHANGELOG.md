@@ -14,7 +14,7 @@ versions may include breaking changes.
   the first tool for "why can't A reach B?". `traceflows` exposes the config surface
   (`list`/`get`/`set`/`patch`/`delete` + the `policy-lm-restart-traceflow` action);
   `set <id> --traceflow-config '<json>'` starts a trace (dry-run by default, `--apply`
-  to execute). `observations list --traceflow-id <id>` returns the traced path.
+  to execute). `observations list <traceflow-id>` returns the traced path.
   Pure allow-list addition — no generator changes; writes, JSON struct bodies and
   paging come from the existing machinery. Manager API traceflow stays deferred.
 

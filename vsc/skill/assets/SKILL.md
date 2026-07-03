@@ -14,7 +14,7 @@ the `vcf-sdk` vAPI bindings and split into two product groups:
 - `vsc nsx …` — NSX Policy (segments, tier0s, tier1s, services, groups, security-policies,
   gateway-policies, ip-pools, dhcp-server-configs, dhcp-relay-configs, locale-services,
   traceflows, observations — Traceflow injects a synthetic packet; `traceflows set <id>
-  --traceflow-config '<json>'` starts one and `observations list --traceflow-id <id>`
+  --traceflow-config '<json>'` starts one and `observations list <traceflow-id>`
   reads the path it took)
 
 Discover the live surface with `vsc --help`, `vsc vsphere --help`, `vsc nsx --help`,

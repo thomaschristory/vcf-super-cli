@@ -184,7 +184,8 @@ def vsphere_services() -> list[type]:
 
 
 # NSX Policy services. Imported defensively so a single moved symbol cannot break
-# the whole NSX surface. v0.2 adds IP pools, DHCP configs and Tier-1 locale services.
+# the whole NSX surface. v0.2 adds IP pools, DHCP configs and Tier-1 locale services;
+# #58 adds Traceflow (config CRUD + restart) and its observations (the traced path).
 _NSX_SERVICE_SPECS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (
         "vcf.nsx.policy.api.v1.infra_client",
@@ -196,6 +197,7 @@ _NSX_SERVICE_SPECS: tuple[tuple[str, tuple[str, ...]], ...] = (
             "IpPools",
             "DhcpServerConfigs",
             "DhcpRelayConfigs",
+            "Traceflows",
         ),
     ),
     (
@@ -203,6 +205,7 @@ _NSX_SERVICE_SPECS: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("Groups", "SecurityPolicies", "GatewayPolicies"),
     ),
     ("vcf.nsx.policy.api.v1.infra.tier_1s_client", ("LocaleServices",)),
+    ("vcf.nsx.policy.api.v1.infra.traceflows_client", ("Observations",)),
 )
 
 

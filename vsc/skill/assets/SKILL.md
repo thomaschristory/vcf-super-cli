@@ -12,7 +12,10 @@ the `vcf-sdk` vAPI bindings and split into two product groups:
   resource-pool, and the VM power/hardware leaves: power, cpu, memory, disk, ethernet —
   each takes the VM id as an argument, e.g. `vsc vsphere power stop <vm>`)
 - `vsc nsx …` — NSX Policy (segments, tier0s, tier1s, services, groups, security-policies,
-  gateway-policies, ip-pools, dhcp-server-configs, dhcp-relay-configs, locale-services)
+  gateway-policies, ip-pools, dhcp-server-configs, dhcp-relay-configs, locale-services,
+  traceflows, observations — Traceflow injects a synthetic packet; `traceflows set <id>
+  --traceflow-config '<json>'` starts one and `observations list <traceflow-id>`
+  reads the path it took)
 
 Discover the live surface with `vsc --help`, `vsc vsphere --help`, `vsc nsx --help`,
 and `vsc vsphere vm --help`. Leaves expose `list`/`get <id>` reads and — where the SDK

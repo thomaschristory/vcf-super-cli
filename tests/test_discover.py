@@ -159,6 +159,49 @@ def test_expanded_catalog_read_contract_holds() -> None:
             assert op.cli_verb in {"get", "list"}
 
 
+# --------------------------------------------------------------------------- #
+# NSX Traceflow (#58)
+# --------------------------------------------------------------------------- #
+
+
+def test_nsx_catalog_includes_traceflow_services() -> None:
+    names = {c.__name__ for c in nsx_services()}
+    assert {"Traceflows", "Observations"} <= names
+
+
+def _traceflow_ops() -> list[Operation]:
+    tf = next(c for c in nsx_services() if c.__name__ == "Traceflows")
+    return discover_operations(tf, "nsx", read_only=False)
+
+
+def test_traceflows_expose_crud_verbs() -> None:
+    by_verb = {o.cli_verb: o for o in _traceflow_ops()}
+    assert by_verb["list"].http_method == "GET"
+    assert by_verb["get"].http_method == "GET"
+    assert by_verb["set"].http_method == "PUT"
+    assert by_verb["patch"].http_method == "PATCH"
+    assert by_verb["delete"].http_method == "DELETE"
+    # The restart action is a POST with no ?action=, so it keeps its kebab op id.
+    assert by_verb["policy-lm-restart-traceflow"].http_method == "POST"
+
+
+def test_traceflows_set_body_is_required_struct() -> None:
+    set_op = next(o for o in _traceflow_ops() if o.cli_verb == "set")
+    cfg = next(p for p in set_op.params if p.name == "traceflow_config")
+    assert cfg.kind is ParamKind.STRUCT
+    assert cfg.required
+    assert cfg.is_body
+
+
+def test_observations_list_has_required_traceflow_id_path_param() -> None:
+    obs = next(c for c in nsx_services() if c.__name__ == "Observations")
+    ops = discover_operations(obs, "nsx")
+    assert [o.cli_verb for o in ops] == ["list"]  # single read op, verb is 'list'
+    tid = next(p for p in ops[0].params if p.name == "traceflow_id")
+    assert tid.in_path  # -> positional CLI argument, not a --traceflow-id option
+    assert tid.required
+
+
 def test_action_from_url_edge_cases() -> None:
     assert _action_from_url("/x?action=revise") == "revise"
     assert _action_from_url("/x?force=true&action=reprocess") == "reprocess"  # not first

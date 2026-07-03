@@ -259,6 +259,76 @@ def test_write_apply_routes_named_body_op() -> None:
     assert "segment" in _CAPTURED  # body struct routed to the SDK method
 
 
+def test_traceflows_set_dry_run_emits_put_body_and_never_connects() -> None:
+    # #58: the new NSX Traceflow write surface must inherit the dry-run gate —
+    # preview a PUT with the traceflow-config body, opening no connection.
+    calls: list[str] = []
+
+    def connect(backend: str) -> object:
+        calls.append(backend)
+        return object()
+
+    op = _write("Traceflows", "set", "nsx")
+    app = _write_app(op, object, connect)
+    result = runner.invoke(app, ["tf-1", "--traceflow-config", '{"display_name": "tf-web"}'])
+    assert result.exit_code == 0, result.stdout
+    env = json.loads(result.stdout)
+    assert env["applied"] is False
+    assert env["request"]["method"] == "PUT"
+    assert env["request"]["body"] == {"display_name": "tf-web"}
+    assert calls == []  # invariant: dry-run opens no connection
+
+
+def test_traceflows_restart_dry_run_gate_never_connects() -> None:
+    # #58: the restart action (POST, no ?action=) is a write and must inherit the
+    # dry-run gate — preview and open no connection without --apply.
+    calls: list[str] = []
+
+    def connect(backend: str) -> object:
+        calls.append(backend)
+        return object()
+
+    op = _write("Traceflows", "policy-lm-restart-traceflow", "nsx")
+    app = _write_app(op, object, connect)
+    result = runner.invoke(app, ["tf-1"])  # no --apply
+    assert result.exit_code == 0, result.stdout
+    env = json.loads(result.stdout)
+    assert env["applied"] is False
+    assert env["request"]["method"] == "POST"
+    assert calls == []  # invariant: dry-run opens no connection
+
+
+def test_observations_list_all_on_non_cursor_op_does_not_crash() -> None:
+    # #58: observations list returns a cursor-shaped result but the op takes NO
+    # cursor input param. --all must not re-invoke with a cursor kwarg (which the
+    # SDK method rejects) — it degrades to a safe single-page no-op, like vSphere.
+    invocations: list[dict[str, object]] = []
+
+    class Res:
+        def __init__(self, cursor: str | None) -> None:
+            self.results = [{"hop": 1}]
+            self.cursor = cursor
+
+    class FakeObs:
+        def __init__(self, _cfg: object) -> None:
+            pass
+
+        def policy_lm_list_traceflow_observations(self, **kwargs: object) -> Res:
+            invocations.append(kwargs)
+            if "cursor" in kwargs:
+                raise TypeError("unexpected keyword argument 'cursor'")
+            return Res("PAGE2")  # server hands back a cursor
+
+    obs = next(c for c in nsx_services() if c.__name__ == "Observations")
+    op = next(o for o in discover_operations(obs, "nsx") if o.cli_verb == "list")
+    app = _app_for(op, FakeObs)
+    result = runner.invoke(app, ["tf-1", "--all"])
+    assert result.exit_code == 0, result.stdout or repr(result.exception)
+    # The op takes no cursor input, so --all must invoke exactly once and never
+    # forward a cursor kwarg — no attempt to follow the returned cursor.
+    assert invocations == [{"traceflow_id": "tf-1"}]
+
+
 def _synthetic_write_with_param(param_name: str) -> Operation:
     return Operation(
         backend="vsphere",

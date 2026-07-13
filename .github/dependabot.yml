@@ -1,0 +1,27 @@
+# Dependabot keeps dependencies and the SHA-pinned GitHub Actions current.
+# Paired with the repo-level Dependabot alerts/security updates enabled in
+# Settings -> Code security. See issue #57 (security audit F1/F5).
+version: 2
+updates:
+  # Python deps (uv reads pyproject.toml / uv.lock via the pip ecosystem).
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-deps:
+        patterns:
+          - "*"
+
+  # GitHub Actions are SHA-pinned; Dependabot proposes the next immutable SHA
+  # (with the trailing version comment) as new releases land.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -14,6 +14,11 @@ class BackendCreds(BaseModel):
     username: str
     password: str | None = None  # None => look in the OS keyring
     insecure: bool = False
+    # Optional path to a CA bundle used to verify the target's certificate.
+    # Lets self-signed lab certs be pinned instead of disabling TLS entirely
+    # (`insecure: true`). Ignored when `insecure` is set. Overridable via
+    # VSC_<BACKEND>_CACERT.
+    ca_bundle: str | None = None
 
     model_config = {"extra": "forbid"}
 

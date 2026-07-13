@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import requests
+import structlog
 import urllib3
 from com.vmware.cis_client import Session
 from vmware.vapi.bindings.stub import StubConfiguration
@@ -23,19 +24,33 @@ from vmware.vapi.security.user_password import (
 )
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 
+log = structlog.get_logger(__name__)
 
-def _session(verify: bool) -> requests.Session:
+
+def _warn_insecure(backend: str, server: str) -> None:
+    """Warn (to stderr) that a connection is running with TLS verification off."""
+    log.warning(
+        "insecure_tls",
+        backend=backend,
+        server=server,
+        detail="TLS verification disabled; credentials traverse an unverified channel",
+    )
+
+
+def _session(verify: bool | str) -> requests.Session:
     sess = requests.Session()
     sess.verify = verify
-    if not verify:
+    if verify is False:
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     return sess
 
 
 def connect_vsphere(
-    server: str, username: str, password: str, *, verify: bool = True
+    server: str, username: str, password: str, *, verify: bool | str = True
 ) -> StubConfiguration:
     """Authenticate to vCenter and return a session-backed StubConfiguration."""
+    if verify is False:
+        _warn_insecure("vsphere", server)
     sess = _session(verify)
     url = f"https://{server}/api"
     login_cfg = StubConfigurationFactory.new_std_configuration(
@@ -64,9 +79,11 @@ def connect_vsphere(
 
 
 def connect_nsx(
-    server: str, username: str, password: str, *, verify: bool = True
+    server: str, username: str, password: str, *, verify: bool | str = True
 ) -> StubConfiguration:
     """Return a basic-auth StubConfiguration for the NSX Policy API."""
+    if verify is False:
+        _warn_insecure("nsx", server)
     sess = _session(verify)
     connector: Any = get_requests_connector(session=sess, url=f"https://{server}")
     connector.set_security_context(create_user_password_security_context(username, password))

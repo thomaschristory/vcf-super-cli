@@ -54,6 +54,7 @@ VSC_PROFILE=prod vsc nsx segments list
 | `VSC_VSPHERE_USERNAME` / `VSC_NSX_USERNAME` | Username |
 | `VSC_VSPHERE_PASSWORD` / `VSC_NSX_PASSWORD` | Password |
 | `VSC_VSPHERE_INSECURE` / `VSC_NSX_INSECURE` | `1`/`true` to skip TLS verification (lab/self-signed) |
+| `VSC_VSPHERE_CACERT` / `VSC_NSX_CACERT` | Path to a CA bundle to verify the target against (preferred over `_INSECURE`) |
 | `VSC_CONFIG_FILE` | Override the config file location |
 | `VSC_LOG_LEVEL` | Log level on stderr (default `WARNING`) |
 | `VSC_COMPLETE_DYNAMIC` | `1`/`true` to enable [live resource-id completion](usage.md#live-resource-id-completion-opt-in) (off by default) |
@@ -62,5 +63,12 @@ VSC_PROFILE=prod vsc nsx segments list
 | `VSC_CACHE_DIR` | Override the cache directory (where live-completion results are cached) |
 
 !!! warning "TLS"
-    Verification is **on by default**. Only set `VSC_*_INSECURE` (or
-    `--vsphere-insecure`) for lab/self-signed certificates.
+    Verification is **on by default**. `VSC_*_INSECURE` (or `--vsphere-insecure`)
+    disables it entirely, which exposes the credentials exchanged on connect to a
+    man-in-the-middle — use it **only** for self-signed lab targets, never in
+    production. When an insecure connection is actually used, `vsc` logs an
+    `insecure_tls` warning to stderr.
+
+    For self-signed certs, prefer pinning the CA over disabling verification: set
+    `ca_bundle` in the profile (or `VSC_<BACKEND>_CACERT`) to the CA bundle path
+    so the certificate is still validated.

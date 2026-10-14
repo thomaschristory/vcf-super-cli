@@ -7,6 +7,24 @@ versions may include breaking changes.
 
 ## [Unreleased]
 
+### Security
+
+- **CI supply-chain & repo hardening** (#57) — closes the security-audit findings.
+  All GitHub Actions across the five workflows are now pinned to immutable 40-char
+  commit SHAs (with trailing version comments), including the PyPI trusted-publishing
+  step in `release.yml` which previously used the `release/v1` branch ref (F1/F2). A
+  new `.github/dependabot.yml` keeps those SHAs and the Python deps current, and
+  Dependabot alerts/security updates plus branch protection on `main` are enabled at
+  the repo level (F4/F5). `docs.yml` now grants `pages: write`/`id-token: write` only
+  on the `deploy` job instead of workflow-wide (F6).
+- **Insecure-TLS hardening** (#57) — when a connection actually runs with TLS
+  verification disabled (`insecure` / `VSC_<BACKEND>_INSECURE`), `vsc` now logs an
+  `insecure_tls` warning to stderr (F3). Added optional CA-bundle pinning via
+  `ca_bundle` in a profile or `VSC_<BACKEND>_CACERT`, so self-signed lab certs can be
+  verified instead of disabling verification entirely. The resolved `server` value is
+  now validated as a bare host/host:port, rejecting a scheme, path, query, or `@`
+  userinfo that could redirect the authenticated session (F7).
+
 ## v0.6.0 — 2026-07-03
 
 NSX Traceflow — inject a synthetic packet and read the exact path it takes through

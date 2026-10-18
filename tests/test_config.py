@@ -195,6 +195,58 @@ def test_env_insecure_precedence(
     assert targets.resolve_target("vsphere").verify is expected_verify
 
 
+@pytest.mark.parametrize(
+    "bad_server",
+    [
+        "https://h/api",  # scheme + path
+        "h/api",  # path
+        "user@h",  # userinfo
+        "h?x=1",  # query
+        "h:",  # empty port
+        "h h",  # whitespace
+    ],
+)
+def test_resolve_target_rejects_malformed_server(bad_server: str) -> None:
+    save_config(_profile(bad_server, password="p"))
+    with pytest.raises(targets.TargetNotConfigured, match="invalid server"):
+        targets.resolve_target("vsphere")
+
+
+@pytest.mark.parametrize("good_server", ["vcenter.lab", "vcenter.lab:443", "10.0.0.5", "host"])
+def test_resolve_target_accepts_host_and_host_port(good_server: str) -> None:
+    save_config(_profile(good_server, password="p"))
+    assert targets.resolve_target("vsphere").server == good_server
+
+
+def test_ca_bundle_from_profile_sets_verify_to_path() -> None:
+    save_config(
+        Config(
+            current_profile="prod",
+            profiles={
+                "prod": Profile(
+                    vsphere=BackendCreds(
+                        server="h", username="u", password="p", ca_bundle="/etc/ssl/lab.pem"
+                    )
+                )
+            },
+        )
+    )
+    assert targets.resolve_target("vsphere").verify == "/etc/ssl/lab.pem"
+
+
+def test_env_cacert_overrides_profile(monkeypatch: pytest.MonkeyPatch) -> None:
+    save_config(_profile("h", password="p"))
+    monkeypatch.setenv("VSC_VSPHERE_CACERT", "/env/ca.pem")
+    assert targets.resolve_target("vsphere").verify == "/env/ca.pem"
+
+
+def test_insecure_wins_over_ca_bundle(monkeypatch: pytest.MonkeyPatch) -> None:
+    save_config(_profile("h", password="p"))
+    monkeypatch.setenv("VSC_VSPHERE_CACERT", "/env/ca.pem")
+    monkeypatch.setenv("VSC_VSPHERE_INSECURE", "1")
+    assert targets.resolve_target("vsphere").verify is False
+
+
 def test_profile_flag_overrides_env_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     save_config(
         Config(

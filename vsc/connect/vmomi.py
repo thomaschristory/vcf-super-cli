@@ -16,10 +16,13 @@ import datetime as _dt
 import ssl
 from typing import Any
 
+import structlog
 from pyVim.connect import Disconnect, SmartConnect
 from pyVmomi import vim, vmodl
 
 from vsc.connect.targets import resolve_target
+
+log = structlog.get_logger(__name__)
 
 # Process-wide cache, mirroring vsc.connect.targets for the vAPI path.
 _SI: dict[str, Any] = {}
@@ -28,9 +31,11 @@ _SI: dict[str, Any] = {}
 _SKIP_PROPS = frozenset({"dynamicType", "dynamicProperty"})
 
 
-def _ssl_context(verify: bool) -> ssl.SSLContext:
-    ctx = ssl.create_default_context()
-    if not verify:
+def _ssl_context(verify: bool | str) -> ssl.SSLContext:
+    # A CA-bundle path pins verification against a specific (e.g. self-signed
+    # lab) CA instead of the system trust store.
+    ctx = ssl.create_default_context(cafile=verify if isinstance(verify, str) else None)
+    if verify is False:
         # Mirrors the REST path (vsc.connect.session): only when the profile/env
         # explicitly opts into insecure (self-signed lab certs).
         ctx.check_hostname = False
@@ -44,6 +49,13 @@ def connect_vmomi() -> Any:
     if cached is not None:
         return cached
     target = resolve_target("vsphere")
+    if target.verify is False:
+        log.warning(
+            "insecure_tls",
+            backend="vsphere",
+            server=target.server,
+            detail="TLS verification disabled; credentials traverse an unverified channel",
+        )
     si = SmartConnect(
         host=target.server,
         user=target.username,
